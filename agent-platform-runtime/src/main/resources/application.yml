@@ -1,0 +1,62 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: agentverse-runtime
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://10.20.16.122:30432/biview?currentSchema=biview&useUnicode=true&characterEncoding=utf-8
+    username: biview
+    password: biview@2023
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
+      continue-on-error: true
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:/mapper/**/*.xml
+  type-aliases-package: com.agentverse.**.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: assign_id
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# JWT 配置（生产环境请通过环境变量 JWT_SECRET 覆盖）
+jwt:
+  secret: ${JWT_SECRET:AgentVerse-JWT-Secret-Key-2024-Must-Be-At-Least-256-Bits!}
+logging:
+  level:
+    root: INFO
+    com.agentverse: DEBUG
+    org.springframework.web: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# AgentScope 配置（硬编码模型参数）
+agent:
+  model:
+    provider: dashscope
+    name: qwen3.6-plus-2026-04-02
+    api-key: sk-fe6ff5901b0042cda9ffe7b2a74cd46e
+    temperature: 0.7
+    max-tokens: 4096
+    top-p: 0.9
