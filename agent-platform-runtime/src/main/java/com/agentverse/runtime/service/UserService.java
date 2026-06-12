@@ -1,7 +1,12 @@
-/*
- * Decompiled with CFR 0.152.
- */
 package com.agentverse.runtime.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.agentverse.common.dto.auth.LoginRequest;
 import com.agentverse.common.dto.auth.LoginResponse;
@@ -13,30 +18,33 @@ import com.agentverse.common.exception.ErrorCode;
 import com.agentverse.common.security.JwtUtils;
 import com.agentverse.common.security.PasswordUtils;
 import com.agentverse.runtime.mapper.SysUserMapper;
-import com.agentverse.runtime.service.RolePermissionService;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import java.time.LocalDateTime;
-import java.util.List;
-import lombok.Generated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 用户服务。
+ * <p>
+ * 负责注册、登录、用户信息查询。
+ */
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    @Generated
+
     private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final SysUserMapper sysUserMapper;
     private final RolePermissionService rolePermissionService;
 
-    @Transactional(rollbackFor={Exception.class})
+    /**
+     * 注册新用户。
+     */
+    @Transactional(rollbackFor = { Exception.class })
     public UserInfoResponse register(RegisterRequest request) {
-        log.info("Registering user: {}", (Object)request.getUsername());
-        LambdaQueryWrapper queryWrapper = new LambdaQueryWrapper();
-        queryWrapper.eq(SysUser::getUsername, (Object)request.getUsername());
-        if (this.sysUserMapper.selectCount((Wrapper)queryWrapper) > 0L) {
+        log.info("Registering user: {}", request.getUsername());
+        LambdaQueryWrapper<SysUser> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SysUser::getUsername, request.getUsername());
+        if (sysUserMapper.selectCount(queryWrapper) > 0L) {
             throw new BizException(ErrorCode.USERNAME_EXISTS);
         }
         SysUser user = new SysUser();
@@ -48,16 +56,19 @@ public class UserService {
         user.setCreatedTime(LocalDateTime.now());
         user.setUpdatedTime(LocalDateTime.now());
         user.setDeleted(0);
-        this.sysUserMapper.insert(user);
-        log.info("User registered successfully: id={}, username={}", (Object)user.getId(), (Object)user.getUsername());
-        return this.buildUserInfoResponse(user);
+        sysUserMapper.insert(user);
+        log.info("User registered successfully: id={}, username={}", user.getId(), user.getUsername());
+        return buildUserInfoResponse(user);
     }
 
+    /**
+     * 用户登录。校验密码、签发 JWT、加载权限。
+     */
     public LoginResponse login(LoginRequest request) {
-        log.info("User login attempt: {}", (Object)request.getUsername());
-        LambdaQueryWrapper queryWrapper = new LambdaQueryWrapper();
-        queryWrapper.eq(SysUser::getUsername, (Object)request.getUsername());
-        SysUser user = (SysUser)this.sysUserMapper.selectOne((Wrapper)queryWrapper);
+        log.info("User login attempt: {}", request.getUsername());
+        LambdaQueryWrapper<SysUser> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(SysUser::getUsername, request.getUsername());
+        SysUser user = sysUserMapper.selectOne(queryWrapper);
         if (user == null) {
             throw new BizException(ErrorCode.INVALID_CREDENTIALS);
         }
@@ -67,9 +78,9 @@ public class UserService {
         if (!PasswordUtils.matches(request.getPassword(), user.getPassword())) {
             throw new BizException(ErrorCode.INVALID_CREDENTIALS);
         }
-        List<String> permissions = this.rolePermissionService.getPermissionsByRoleCode(user.getRoleCode());
+        List<String> permissions = rolePermissionService.getPermissionsByRoleCode(user.getRoleCode());
         String token = JwtUtils.generateToken(user.getId(), user.getUsername(), user.getRoleCode());
-        log.info("User logged in successfully: {}", (Object)user.getUsername());
+        log.info("User logged in successfully: {}", user.getUsername());
         LoginResponse response = new LoginResponse();
         response.setAccessToken(token);
         response.setTokenType("Bearer");
@@ -85,11 +96,11 @@ public class UserService {
     }
 
     public SysUser getUserById(Long userId) {
-        return (SysUser)this.sysUserMapper.selectById(userId);
+        return sysUserMapper.selectById(userId);
     }
 
     public UserInfoResponse buildUserInfoResponse(SysUser user) {
-        List<String> permissions = this.rolePermissionService.getPermissionsByRoleCode(user.getRoleCode());
+        List<String> permissions = rolePermissionService.getPermissionsByRoleCode(user.getRoleCode());
         UserInfoResponse response = new UserInfoResponse();
         response.setId(user.getId());
         response.setUsername(user.getUsername());
@@ -98,11 +109,4 @@ public class UserService {
         response.setPermissions(permissions);
         return response;
     }
-
-    @Generated
-    public UserService(SysUserMapper sysUserMapper, RolePermissionService rolePermissionService) {
-        this.sysUserMapper = sysUserMapper;
-        this.rolePermissionService = rolePermissionService;
-    }
 }
-

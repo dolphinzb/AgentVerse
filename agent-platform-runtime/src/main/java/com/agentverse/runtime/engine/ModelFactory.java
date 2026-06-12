@@ -3,6 +3,13 @@
  */
 package com.agentverse.runtime.engine;
 
+import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.agentverse.common.enums.ProviderType;
 import com.agentverse.common.exception.BizException;
 import com.agentverse.common.exception.ErrorCode;
@@ -11,16 +18,12 @@ import com.agentverse.runtime.model.entity.ModelConfig;
 import com.agentverse.runtime.model.entity.ModelProvider;
 import com.agentverse.runtime.model.mapper.ModelConfigMapper;
 import com.agentverse.runtime.model.mapper.ModelProviderMapper;
+
 import io.agentscope.core.model.ChatModelBase;
 import io.agentscope.core.model.DashScopeChatModel;
 import io.agentscope.core.model.GenerateOptions;
 import io.agentscope.core.model.OpenAIChatModel;
-import java.io.Serializable;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.Generated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 @Component
 public class ModelFactory {
@@ -36,15 +39,15 @@ public class ModelFactory {
 
     public void evictModel(String modelConfigId) {
         this.modelCache.remove(modelConfigId);
-        log.info("Evicted model from cache: modelConfigId={}", (Object)modelConfigId);
+        log.info("Evicted model from cache: modelConfigId={}", (Object) modelConfigId);
     }
 
     public void evictByProvider(String providerId) {
         this.modelCache.keySet().removeIf(configId -> {
-            ModelConfig config = (ModelConfig)this.modelConfigMapper.selectById((Serializable)((Object)configId));
+            ModelConfig config = (ModelConfig) this.modelConfigMapper.selectById((Serializable) ((Object) configId));
             return config != null && providerId.equals(config.getProviderId());
         });
-        log.info("Evicted models by provider from cache: providerId={}", (Object)providerId);
+        log.info("Evicted models by provider from cache: providerId={}", (Object) providerId);
     }
 
     public void evictAll() {
@@ -53,12 +56,13 @@ public class ModelFactory {
     }
 
     private ChatModelBase buildModel(String modelConfigId) {
-        log.info("Building ChatModel for modelConfigId: {}", (Object)modelConfigId);
-        ModelConfig config = (ModelConfig)this.modelConfigMapper.selectById((Serializable)((Object)modelConfigId));
+        log.info("Building ChatModel for modelConfigId: {}", (Object) modelConfigId);
+        ModelConfig config = (ModelConfig) this.modelConfigMapper.selectById((Serializable) ((Object) modelConfigId));
         if (config == null) {
             throw new BizException(ErrorCode.MODEL_CONFIG_NOT_FOUND);
         }
-        ModelProvider provider = (ModelProvider)this.modelProviderMapper.selectById((Serializable)((Object)config.getProviderId()));
+        ModelProvider provider = (ModelProvider) this.modelProviderMapper
+                .selectById((Serializable) ((Object) config.getProviderId()));
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
         }
@@ -67,14 +71,18 @@ public class ModelFactory {
         }
         String apiKey = AesEncryptUtil.decrypt(provider.getApiKeyEncrypted());
         ProviderType providerType = ProviderType.fromCode(provider.getProviderType());
-        GenerateOptions options = GenerateOptions.builder().temperature(config.getTemperature()).maxTokens(config.getMaxTokens()).topP(config.getTopP()).build();
+        GenerateOptions options = GenerateOptions.builder().temperature(config.getTemperature())
+                .maxTokens(config.getMaxTokens()).topP(config.getTopP()).build();
         String baseUrl = provider.getBaseUrl() != null ? provider.getBaseUrl() : providerType.getDefaultBaseUrl();
-        DashScopeChatModel chatModel = switch (providerType.getCode()) {
-            case "dashscope" -> DashScopeChatModel.builder().apiKey(apiKey).modelName(config.getModelName()).baseUrl(baseUrl).stream(true).defaultOptions(options).build();
-            case "openai", "deepseek" -> OpenAIChatModel.builder().apiKey(apiKey).modelName(config.getModelName()).baseUrl(baseUrl).stream(true).generateOptions(options).build();
+        ChatModelBase chatModel = switch (providerType.getCode()) {
+            case "dashscope" -> DashScopeChatModel.builder().apiKey(apiKey).modelName(config.getModelName())
+                    .baseUrl(baseUrl).stream(true).defaultOptions(options).build();
+            case "openai", "deepseek" -> OpenAIChatModel.builder().apiKey(apiKey).modelName(config.getModelName())
+                    .baseUrl(baseUrl).stream(true).generateOptions(options).build();
             default -> throw new BizException(ErrorCode.MODEL_PROVIDER_TYPE_UNSUPPORTED);
         };
-        log.info("ChatModel built successfully: providerType={}, modelName={}", (Object)providerType.getCode(), (Object)config.getModelName());
+        log.info("ChatModel built successfully: providerType={}, modelName={}", (Object) providerType.getCode(),
+                (Object) config.getModelName());
         return chatModel;
     }
 
@@ -84,4 +92,3 @@ public class ModelFactory {
         this.modelProviderMapper = modelProviderMapper;
     }
 }
-

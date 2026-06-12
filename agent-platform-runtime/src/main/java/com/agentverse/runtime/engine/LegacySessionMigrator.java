@@ -1,21 +1,9 @@
-/*
- * Decompiled with CFR 0.152.
- */
 package com.agentverse.runtime.engine;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.agentscope.core.message.ContentBlock;
-import io.agentscope.core.message.Msg;
-import io.agentscope.core.message.MsgRole;
-import io.agentscope.core.message.TextBlock;
-import io.agentscope.core.session.Session;
-import io.agentscope.core.state.SessionKey;
-import io.agentscope.core.state.SimpleSessionKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Generated;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,131 +17,144 @@ import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.agentscope.core.message.Msg;
+import io.agentscope.core.message.TextBlock;
+import io.agentscope.core.session.Session;
+import io.agentscope.core.state.SimpleSessionKey;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * 旧版会话数据迁移器。
+ * <p>
+ * 应用启动时把 {@code agentverse:session:<id>:messages} 格式的旧 Key 迁移到新版 Session 后端。
+ */
 @Component
-@ConditionalOnProperty(name={"agent.session.backend"}, havingValue="redis")
+@ConditionalOnProperty(name = { "agent.session.backend" }, havingValue = "redis")
+@RequiredArgsConstructor
 public class LegacySessionMigrator {
-    @Generated
+
     private static final Logger log = LoggerFactory.getLogger(LegacySessionMigrator.class);
     static final String OLD_KEY_PREFIX = "agentverse:session:";
     static final String OLD_KEY_SUFFIX = ":messages";
     static final String NEW_LIST_KEY = "memory_messages";
-    private final StringRedisTemplate redis;
-    private final Session newSession;
+
+    private final @Nullable StringRedisTemplate redis;
+    private final @Nullable Session newSession;
     private final ObjectMapper objectMapper;
-    private final boolean skip;
+    private final @Value("${agent.session.legacy-migration.skip:false}") boolean skip;
     private final AtomicBoolean migrated = new AtomicBoolean(false);
 
-    public LegacySessionMigrator(@Nullable StringRedisTemplate redis, @Nullable Session newSession, ObjectMapper objectMapper, @Value(value="${agent.session.legacy-migration.skip:false}") boolean skip) {
-        this.redis = redis;
-        this.newSession = newSession;
-        this.objectMapper = objectMapper;
-        this.skip = skip;
-    }
-
-    @EventListener(value={ApplicationReadyEvent.class})
+    @EventListener({ ApplicationReadyEvent.class })
     @Async
     public void onAppReady() {
         try {
-            int n = this.migrateAll();
-            log.info("LegacySessionMigrator done: {} sessions migrated", (Object)n);
-        }
-        catch (Exception e) {
-            log.error("LegacySessionMigrator failed: {}", (Object)e.getMessage(), (Object)e);
+            int n = migrateAll();
+            log.info("LegacySessionMigrator done: {} sessions migrated", n);
+        } catch (Exception e) {
+            log.error("LegacySessionMigrator failed: {}", e.getMessage(), e);
         }
     }
 
     public int migrateAll() {
-        if (this.skip) {
+        if (skip) {
             log.debug("LegacySessionMigrator skip flag set, skip SCAN");
             return 0;
         }
-        if (this.redis == null || this.newSession == null) {
+        if (redis == null || newSession == null) {
             log.debug("LegacySessionMigrator: redis or newSession not available, skip");
             return 0;
         }
-        if (!this.migrated.compareAndSet(false, true)) {
+        if (!migrated.compareAndSet(false, true)) {
             log.debug("LegacySessionMigrator already ran, skip");
             return 0;
         }
         String pattern = "agentverse:session:*:messages";
         ScanOptions opts = ScanOptions.scanOptions().match(pattern).count(100L).build();
         int count = 0;
-        try (Cursor cursor = this.redis.scan(opts);){
+        try (Cursor<String> cursor = redis.scan(opts)) {
             while (cursor.hasNext()) {
-                String oldKey = (String)cursor.next();
-                if (oldKey == null || !this.migrateOne(oldKey)) continue;
+                String oldKey = cursor.next();
+                if (oldKey == null || !migrateOne(oldKey))
+                    continue;
                 ++count;
             }
-        }
-        catch (Exception e) {
-            log.error("LegacySessionMigrator SCAN failed: {}", (Object)e.getMessage(), (Object)e);
+        } catch (Exception e) {
+            log.error("LegacySessionMigrator SCAN failed: {}", e.getMessage(), e);
         }
         return count;
     }
 
     private boolean migrateOne(String oldKey) {
-        String sessionId = LegacySessionMigrator.extractSessionId(oldKey);
+        String sessionId = extractSessionId(oldKey);
         if (sessionId == null) {
-            log.warn("LegacySessionMigrator: cannot extract sessionId from key={}", (Object)oldKey);
+            log.warn("LegacySessionMigrator: cannot extract sessionId from key={}", oldKey);
             return false;
         }
         try {
-            String json = (String)this.redis.opsForValue().get((Object)oldKey);
+            String json = redis.opsForValue().get(oldKey);
             if (json == null || json.isEmpty()) {
-                this.redis.delete((Object)oldKey);
+                redis.delete(oldKey);
                 return false;
             }
-            List legacyList = (List)this.objectMapper.readValue(json, (TypeReference)new TypeReference<List<LegacyMessage>>(){});
+            List<LegacyMessage> legacyList = objectMapper.readValue(json,
+                    new TypeReference<List<LegacyMessage>>() {
+                    });
             if (legacyList == null || legacyList.isEmpty()) {
-                this.redis.delete((Object)oldKey);
+                redis.delete(oldKey);
                 return false;
             }
-            ArrayList<Msg> msgs = new ArrayList<Msg>(legacyList.size());
+            ArrayList<Msg> msgs = new ArrayList<>(legacyList.size());
             for (LegacyMessage lm : legacyList) {
-                msgs.add(LegacySessionMigrator.toMsg(lm));
+                msgs.add(toMsg(lm));
             }
-            this.newSession.save((SessionKey)SimpleSessionKey.of((String)sessionId), NEW_LIST_KEY, msgs);
-            this.redis.delete((Object)oldKey);
-            log.info("Migrated legacy session: {} ({} messages)", (Object)sessionId, (Object)msgs.size());
+            newSession.save(SimpleSessionKey.of(sessionId), NEW_LIST_KEY, msgs);
+            redis.delete(oldKey);
             return true;
-        }
-        catch (Exception e) {
-            log.error("Migrating key={} failed: {}", new Object[]{oldKey, e.getMessage(), e});
+        } catch (Exception e) {
+            log.error("LegacySessionMigrator migrateOne failed for key={}: {}", oldKey, e.getMessage(), e);
             return false;
         }
     }
 
-    static String extractSessionId(String key) {
-        if (key == null) {
-            return null;
-        }
-        if (!key.startsWith(OLD_KEY_PREFIX) || !key.endsWith(OLD_KEY_SUFFIX)) {
+    private static String extractSessionId(String key) {
+        if (key == null || !key.startsWith(OLD_KEY_PREFIX) || !key.endsWith(OLD_KEY_SUFFIX)) {
             return null;
         }
         return key.substring(OLD_KEY_PREFIX.length(), key.length() - OLD_KEY_SUFFIX.length());
     }
 
     private static Msg toMsg(LegacyMessage lm) {
-        MsgRole role;
-        try {
-            role = MsgRole.valueOf((String)lm.role());
-        }
-        catch (Exception e) {
-            log.warn("Unknown legacy role={}, fallback to USER", (Object)lm.role());
-            role = MsgRole.USER;
-        }
-        return Msg.builder().role(role).content((ContentBlock)TextBlock.builder().text(lm.content() == null ? "" : lm.content()).build()).build();
+        // 旧消息仅保留角色与文本，构造为新版 TextBlock + Msg
+        String role = lm.getRole() == null ? "user" : lm.getRole();
+        TextBlock tb = TextBlock.builder().text(lm.getContent() == null ? "" : lm.getContent()).build();
+        return Msg.builder()
+                .role(io.agentscope.core.message.MsgRole.valueOf(role.toUpperCase()))
+                .content(tb)
+                .build();
     }
 
-    public record LegacyMessage(String role, String content, long timestamp) {
-        public LegacyMessage {
-            if (role == null) {
-                role = "USER";
-            }
-            if (content == null) {
-                content = "";
-            }
+    /** 旧版消息结构。 */
+    public static class LegacyMessage {
+        private String role;
+        private String content;
+
+        public String getRole() {
+            return role;
+        }
+
+        public void setRole(String role) {
+            this.role = role;
+        }
+
+        public String getContent() {
+            return content;
+        }
+
+        public void setContent(String content) {
+            this.content = content;
         }
     }
 }
-

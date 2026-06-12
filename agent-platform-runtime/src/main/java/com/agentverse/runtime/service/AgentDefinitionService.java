@@ -88,18 +88,18 @@ public class AgentDefinitionService {
     }
 
     public AgentListResponse listAgents(Integer page, Integer pageSize, String status) {
-        Long userId;
-        log.info("Listing agents: page={}, pageSize={}, status={}", new Object[]{page, pageSize, status});
-        Page pageParam = new Page((long)page.intValue(), (long)pageSize.intValue());
-        LambdaQueryWrapper queryWrapper = new LambdaQueryWrapper();
-        if (StringUtils.hasText((String)status)) {
-            queryWrapper.eq(AgentDefinition::getStatus, (Object)status);
+        log.info("Listing agents: page={}, pageSize={}, status={}", page, pageSize, status);
+        Page<AgentDefinition> pageParam = new Page<>(page.longValue(), pageSize.longValue());
+        LambdaQueryWrapper<AgentDefinition> queryWrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(status)) {
+            queryWrapper.eq(AgentDefinition::getStatus, status);
         }
+        Long userId;
         if (!UserContext.isAdmin() && (userId = UserContext.getUserId()) != null) {
-            queryWrapper.eq(BaseEntity::getCreatedBy, (Object)userId.toString());
+            queryWrapper.eq(BaseEntity::getCreatedBy, userId.toString());
         }
         queryWrapper.orderByDesc(BaseEntity::getCreatedTime);
-        Page result = (Page)this.agentDefinitionMapper.selectPage((IPage)pageParam, (Wrapper)queryWrapper);
+        Page<AgentDefinition> result = this.agentDefinitionMapper.selectPage(pageParam, queryWrapper);
         List<AgentResponse> agents = result.getRecords().stream().map(this::convertToResponse).collect(Collectors.toList());
         return new AgentListResponse(agents, result.getTotal(), page, pageSize);
     }

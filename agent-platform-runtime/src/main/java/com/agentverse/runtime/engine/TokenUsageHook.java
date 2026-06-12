@@ -3,7 +3,14 @@
  */
 package com.agentverse.runtime.engine;
 
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import com.agentverse.runtime.model.service.ChatUsageService;
+
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.hook.Hook;
 import io.agentscope.core.hook.HookEvent;
@@ -12,17 +19,13 @@ import io.agentscope.core.hook.PostReasoningEvent;
 import io.agentscope.core.hook.RuntimeContextAware;
 import io.agentscope.core.message.Msg;
 import io.agentscope.core.model.ChatUsage;
-import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @Component
 public class TokenUsageHook
-implements Hook,
-RuntimeContextAware {
+        implements Hook,
+        RuntimeContextAware {
     private static final Logger log = LoggerFactory.getLogger(TokenUsageHook.class);
     public static final String ATTR_MODEL_CONFIG_ID = "modelConfigId";
     private final ChatUsageService chatUsageService;
@@ -42,12 +45,12 @@ RuntimeContextAware {
 
     public <T extends HookEvent> Mono<T> onEvent(T event) {
         if (event instanceof PostReasoningEvent) {
-            PostReasoningEvent e = (PostReasoningEvent)event;
+            PostReasoningEvent e = (PostReasoningEvent) event;
             this.accumulate(e.getReasoningMessage());
             return Mono.just(event);
         }
         if (event instanceof PostCallEvent) {
-            PostCallEvent e = (PostCallEvent)event;
+            PostCallEvent e = (PostCallEvent) event;
             return this.persistOnCall(event);
         }
         return Mono.just(event);
@@ -62,18 +65,18 @@ RuntimeContextAware {
         SessionUsage usage = this.accumulators.get(sessionId);
         if ((usage == null || !usage.hasUsage) && event instanceof PostCallEvent) {
             ChatUsage u;
-            PostCallEvent e = (PostCallEvent)event;
+            PostCallEvent e = (PostCallEvent) event;
             ChatUsage chatUsage = u = e.getFinalMessage() != null ? e.getFinalMessage().getChatUsage() : null;
             if (u != null) {
                 usage = usage == null ? new SessionUsage() : usage;
-                usage.totalInputTokens += (long)u.getInputTokens();
-                usage.totalOutputTokens += (long)u.getOutputTokens();
+                usage.totalInputTokens += (long) u.getInputTokens();
+                usage.totalOutputTokens += (long) u.getOutputTokens();
                 usage.hasUsage = true;
                 this.accumulators.put(sessionId, usage);
             }
         }
         if (usage == null || !usage.hasUsage) {
-            log.warn("No ChatUsage for session={}, skip saveUsage", (Object)sessionId);
+            log.warn("No ChatUsage for session={}, skip saveUsage", (Object) sessionId);
             this.accumulators.remove(sessionId);
             return Mono.just(event);
         }
@@ -85,8 +88,8 @@ RuntimeContextAware {
             this.chatUsageService.saveUsage(sessionId, modelConfigId, in, out);
             return event;
         }).subscribeOn(Schedulers.boundedElastic()).onErrorResume(ex -> {
-            log.error("saveUsage failed for session={}", (Object)sessionId, ex);
-            return Mono.just((Object)event);
+            log.error("saveUsage failed for session={}", (Object) sessionId, ex);
+            return Mono.just(event);
         });
     }
 
@@ -100,8 +103,8 @@ RuntimeContextAware {
             this.accumulators.compute(sessionId, (k, old) -> {
                 SessionUsage s = old == null ? new SessionUsage() : old;
                 s.hasUsage = true;
-                s.totalInputTokens += (long)u.getInputTokens();
-                s.totalOutputTokens += (long)u.getOutputTokens();
+                s.totalInputTokens += (long) u.getInputTokens();
+                s.totalOutputTokens += (long) u.getOutputTokens();
                 return s;
             });
         }
@@ -130,4 +133,3 @@ RuntimeContextAware {
         }
     }
 }
-

@@ -34,24 +34,24 @@ public class AdminController {
     @RequirePermission(value="admin:audit")
     @GetMapping(value={"/audit-logs"})
     public ResponseEntity<ApiResponse<PageResult<AuditLog>>> listAuditLogs(@RequestParam(defaultValue="1") Integer page, @RequestParam(defaultValue="20") Integer pageSize, @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime, @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime, @RequestParam(required=false) String action, @RequestParam(required=false) Long userId) {
-        log.info("Query audit logs: page={}, pageSize={}, action={}, userId={}", new Object[]{page, pageSize, action, userId});
-        Page pageParam = new Page((long)page.intValue(), (long)pageSize.intValue());
-        LambdaQueryWrapper queryWrapper = new LambdaQueryWrapper();
+        log.info("Query audit logs: page={}, pageSize={}, action={}, userId={}", page, pageSize, action, userId);
+        Page<AuditLog> pageParam = new Page<>(page.longValue(), pageSize.longValue());
+        LambdaQueryWrapper<AuditLog> queryWrapper = new LambdaQueryWrapper<>();
         if (startTime != null) {
-            queryWrapper.ge(AuditLog::getCreatedTime, (Object)startTime);
+            queryWrapper.ge(AuditLog::getCreatedTime, startTime);
         }
         if (endTime != null) {
-            queryWrapper.le(AuditLog::getCreatedTime, (Object)endTime);
+            queryWrapper.le(AuditLog::getCreatedTime, endTime);
         }
-        if (StringUtils.hasText((String)action)) {
-            queryWrapper.eq(AuditLog::getAction, (Object)action);
+        if (StringUtils.hasText(action)) {
+            queryWrapper.eq(AuditLog::getAction, action);
         }
         if (userId != null) {
-            queryWrapper.eq(AuditLog::getUserId, (Object)userId);
+            queryWrapper.eq(AuditLog::getUserId, userId);
         }
         queryWrapper.orderByDesc(AuditLog::getCreatedTime);
-        Page result = (Page)this.auditLogMapper.selectPage((IPage)pageParam, (Wrapper)queryWrapper);
-        PageResult pageResult = new PageResult(result.getRecords(), result.getTotal(), (long)page, (long)pageSize);
+        Page<AuditLog> result = this.auditLogMapper.selectPage(pageParam, queryWrapper);
+        PageResult<AuditLog> pageResult = new PageResult<>(result.getRecords(), result.getTotal(), page.longValue(), pageSize.longValue());
         return ResponseEntity.ok(ApiResponse.success(pageResult));
     }
 

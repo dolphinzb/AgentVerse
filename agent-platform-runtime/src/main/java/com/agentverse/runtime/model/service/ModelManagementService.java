@@ -1,6 +1,3 @@
-/*
- * Decompiled with CFR 0.152.
- */
 package com.agentverse.runtime.model.service;
 
 import com.agentverse.common.entity.BaseEntity;
@@ -13,31 +10,40 @@ import com.agentverse.runtime.model.entity.ModelConfig;
 import com.agentverse.runtime.model.entity.ModelProvider;
 import com.agentverse.runtime.model.mapper.ModelConfigMapper;
 import com.agentverse.runtime.model.mapper.ModelProviderMapper;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
-import java.util.List;
-import lombok.Generated;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
+/**
+ * 模型快捷添加服务。
+ * <p>提供"一键添加模型"功能：自动按 userId 复用或创建 ModelProvider，再写入 ModelConfig。
+ */
 @Service
+@RequiredArgsConstructor
 public class ModelManagementService {
-    @Generated
+
     private static final Logger log = LoggerFactory.getLogger(ModelManagementService.class);
+
     private final ModelProviderMapper modelProviderMapper;
     private final ModelConfigMapper modelConfigMapper;
 
-    @Transactional(rollbackFor={Exception.class})
+    /**
+     * 一键添加模型。
+     */
+    @Transactional(rollbackFor = {Exception.class})
     public ModelConfigResponse addModel(ModelAddRequest request) {
         Long userId = UserContext.getUserId();
         ProviderType providerType = ProviderType.fromCode(request.getProviderType());
-        ModelProvider provider = this.findOrCreateProvider(request, providerType, userId);
+        ModelProvider provider = findOrCreateProvider(request, providerType, userId);
         if (request.getIsDefault() != null && request.getIsDefault() == 1) {
-            this.clearOtherDefaults(userId);
+            clearOtherDefaults(userId);
         }
         ModelConfig config = new ModelConfig();
         config.setProviderId(provider.getId());
@@ -49,46 +55,55 @@ public class ModelManagementService {
         config.setIsDefault(request.getIsDefault() != null ? request.getIsDefault() : 0);
         config.setStatus("active");
         config.setCreatedBy(userId);
-        this.modelConfigMapper.insert(config);
-        log.info("\u6a21\u578b\u6dfb\u52a0\u6210\u529f: providerType={}, model={}, configId={}", new Object[]{request.getProviderType(), request.getModelName(), config.getId()});
-        return this.convertToResponse(config, provider);
+        modelConfigMapper.insert(config);
+        log.info("模型添加成功: providerType={}, model={}, configId={}",
+                request.getProviderType(), request.getModelName(), config.getId());
+        return convertToResponse(config, provider);
     }
 
+    /**
+     * 按 (userId, providerType, apiKey) 三元组查找已有 Provider，否则创建新的。
+     */
     private ModelProvider findOrCreateProvider(ModelAddRequest request, ProviderType providerType, Long userId) {
-        LambdaQueryWrapper query = new LambdaQueryWrapper();
-        ((LambdaQueryWrapper)query.eq(BaseEntity::getCreatedBy, (Object)userId)).eq(ModelProvider::getProviderType, (Object)request.getProviderType());
-        List existingProviders = this.modelProviderMapper.selectList((Wrapper)query);
+        LambdaQueryWrapper<ModelProvider> query = new LambdaQueryWrapper<>();
+        query.eq(BaseEntity::getCreatedBy, userId)
+                .eq(ModelProvider::getProviderType, request.getProviderType());
+        List<ModelProvider> existingProviders = modelProviderMapper.selectList(query);
         for (ModelProvider p : existingProviders) {
             try {
                 String existingApiKey = AesEncryptUtil.decrypt(p.getApiKeyEncrypted());
                 if (!existingApiKey.equals(request.getApiKey())) continue;
-                log.info("\u590d\u7528\u5df2\u6709 Provider: {}", (Object)p.getId());
+                log.info("复用已有 Provider: {}", p.getId());
                 return p;
-            }
-            catch (Exception e) {
-                log.warn("\u89e3\u5bc6 Provider {} \u7684 API Key \u5931\u8d25", (Object)p.getId());
+            } catch (Exception e) {
+                log.warn("解密 Provider {} 的 API Key 失败", p.getId());
             }
         }
         ModelProvider provider = new ModelProvider();
         provider.setName(providerType.getDisplayName());
         provider.setProviderType(request.getProviderType());
         provider.setApiKeyEncrypted(AesEncryptUtil.encrypt(request.getApiKey()));
-        provider.setBaseUrl(StringUtils.hasText((String)request.getBaseUrl()) ? request.getBaseUrl() : providerType.getDefaultBaseUrl());
+        provider.setBaseUrl(StringUtils.hasText(request.getBaseUrl()) ? request.getBaseUrl() : providerType.getDefaultBaseUrl());
         provider.setCustomHeaders(request.getCustomHeaders());
         provider.setStatus("active");
         provider.setCreatedBy(userId);
-        this.modelProviderMapper.insert(provider);
-        log.info("\u521b\u5efa\u65b0 Provider: {}", (Object)provider.getId());
+        modelProviderMapper.insert(provider);
+        log.info("创建新 Provider: {}", provider.getId());
         return provider;
     }
 
+    /**
+     * 清除当前用户其他默认模型标志。
+     */
     private void clearOtherDefaults(Long userId) {
         if (userId == null) {
             return;
         }
-        LambdaUpdateWrapper updateWrapper = new LambdaUpdateWrapper();
-        ((LambdaUpdateWrapper)((LambdaUpdateWrapper)updateWrapper.eq(BaseEntity::getCreatedBy, (Object)userId)).eq(ModelConfig::getIsDefault, (Object)1)).set(ModelConfig::getIsDefault, (Object)0);
-        this.modelConfigMapper.update(null, (Wrapper)updateWrapper);
+        LambdaUpdateWrapper<ModelConfig> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(BaseEntity::getCreatedBy, userId)
+                .eq(ModelConfig::getIsDefault, 1)
+                .set(ModelConfig::getIsDefault, 0);
+        modelConfigMapper.update(null, updateWrapper);
     }
 
     private ModelConfigResponse convertToResponse(ModelConfig config, ModelProvider provider) {
@@ -102,19 +117,10 @@ public class ModelManagementService {
         response.setTopP(config.getTopP());
         response.setIsDefault(config.getIsDefault());
         response.setStatus(config.getStatus());
-        response.setCreatedTime(config.getCreatedTime());
-        response.setUpdatedTime(config.getUpdatedTime());
         if (provider != null) {
             response.setProviderName(provider.getName());
             response.setProviderType(provider.getProviderType());
         }
         return response;
     }
-
-    @Generated
-    public ModelManagementService(ModelProviderMapper modelProviderMapper, ModelConfigMapper modelConfigMapper) {
-        this.modelProviderMapper = modelProviderMapper;
-        this.modelConfigMapper = modelConfigMapper;
-    }
 }
-

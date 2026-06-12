@@ -1,42 +1,45 @@
-/*
- * Decompiled with CFR 0.152.
- */
 package com.agentverse.runtime.service;
 
 import com.agentverse.common.entity.SysPermission;
 import com.agentverse.runtime.mapper.SysPermissionMapper;
-import java.util.List;
-import java.util.stream.Collectors;
-import lombok.Generated;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * 角色权限服务。
+ * <p>按 roleCode 加载权限码列表。admin 返回所有权限，其他角色从关联表加载。
+ */
 @Service
+@RequiredArgsConstructor
 public class RolePermissionService {
-    @Generated
-    private static final Logger log = LoggerFactory.getLogger(RolePermissionService.class);
+
     private final SysPermissionMapper sysPermissionMapper;
 
+    /**
+     * 获取指定角色的所有权限码。
+     *
+     * @param roleCode 角色代码
+     * @return 权限码列表
+     */
     public List<String> getPermissionsByRoleCode(String roleCode) {
         if ("admin".equals(roleCode)) {
-            List allPermissions = this.sysPermissionMapper.selectList(null);
+            List<SysPermission> allPermissions = sysPermissionMapper.selectList(null);
             return allPermissions.stream().map(SysPermission::getPermCode).collect(Collectors.toList());
         }
-        return this.sysPermissionMapper.selectPermCodesByRoleCode(roleCode);
+        return sysPermissionMapper.selectPermCodesByRoleCode(roleCode);
     }
 
+    /**
+     * 判断指定角色是否拥有指定权限码。admin 默认拥有所有权限。
+     */
     public boolean hasPermission(String roleCode, String permCode) {
         if ("admin".equals(roleCode)) {
             return true;
         }
-        List<String> permissions = this.getPermissionsByRoleCode(roleCode);
+        List<String> permissions = getPermissionsByRoleCode(roleCode);
         return permissions.contains(permCode);
     }
-
-    @Generated
-    public RolePermissionService(SysPermissionMapper sysPermissionMapper) {
-        this.sysPermissionMapper = sysPermissionMapper;
-    }
 }
-

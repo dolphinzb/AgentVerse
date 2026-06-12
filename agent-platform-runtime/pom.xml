@@ -65,6 +65,11 @@
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-harness</artifactId>
         </dependency>
+        <!-- Session Redis 后端:提供 io.agentscope.core.session.redis.RedisSession -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-session-redis</artifactId>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>

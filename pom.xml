@@ -34,7 +34,7 @@
         <postgresql.version>42.7.4</postgresql.version>
 
         <!-- AgentScope -->
-        <agentscope.version>1.1.0-RC2</agentscope.version>
+        <agentscope.version>1.1.0-RC1</agentscope.version>
 
         <!-- Utilities -->
         <lombok.version>1.18.34</lombok.version>
@@ -79,6 +79,12 @@
             <dependency>
                 <groupId>io.agentscope</groupId>
                 <artifactId>agentscope-harness</artifactId>
+                <version>${agentscope.version}</version>
+            </dependency>
+            <!-- Session Redis 后端 (io.agentscope.core.session.redis.RedisSession 在此模块) -->
+            <dependency>
+                <groupId>io.agentscope</groupId>
+                <artifactId>agentscope-extensions-session-redis</artifactId>
                 <version>${agentscope.version}</version>
             </dependency>
 
