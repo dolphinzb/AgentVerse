@@ -1,51 +1,42 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.runtime.service;
 
 import com.agentverse.common.entity.SysPermission;
 import com.agentverse.runtime.mapper.SysPermissionMapper;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.Generated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-/**
- * 角色-权限服务
- */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class RolePermissionService {
-
+    @Generated
+    private static final Logger log = LoggerFactory.getLogger(RolePermissionService.class);
     private final SysPermissionMapper sysPermissionMapper;
 
-    /**
-     * 根据角色代码获取权限列表
-     * admin 角色拥有全部权限
-     */
     public List<String> getPermissionsByRoleCode(String roleCode) {
         if ("admin".equals(roleCode)) {
-            // admin 拥有全部权限
-            List<SysPermission> allPermissions = sysPermissionMapper.selectList(null);
-            return allPermissions.stream()
-                    .map(SysPermission::getPermCode)
-                    .collect(Collectors.toList());
+            List allPermissions = this.sysPermissionMapper.selectList(null);
+            return allPermissions.stream().map(SysPermission::getPermCode).collect(Collectors.toList());
         }
-
-        // 非 admin 角色：通过 sys_role_permission 关联查询
-        return sysPermissionMapper.selectPermCodesByRoleCode(roleCode);
+        return this.sysPermissionMapper.selectPermCodesByRoleCode(roleCode);
     }
 
-    /**
-     * 判断用户是否有指定权限（基于 roleCode）
-     */
     public boolean hasPermission(String roleCode, String permCode) {
         if ("admin".equals(roleCode)) {
             return true;
         }
-        List<String> permissions = getPermissionsByRoleCode(roleCode);
+        List<String> permissions = this.getPermissionsByRoleCode(roleCode);
         return permissions.contains(permCode);
     }
+
+    @Generated
+    public RolePermissionService(SysPermissionMapper sysPermissionMapper) {
+        this.sysPermissionMapper = sysPermissionMapper;
+    }
 }
+

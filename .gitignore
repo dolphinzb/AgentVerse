@@ -62,6 +62,8 @@ build-local.bat
 *.bak
 *.swp
 *~
+.tmp/
+.tmp/**
 
 .trae/
 .claude/

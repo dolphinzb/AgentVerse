@@ -1,75 +1,80 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.runtime.engine;
 
 import com.agentverse.common.entity.AgentDefinition;
 import com.agentverse.common.exception.BizException;
 import com.agentverse.common.exception.ErrorCode;
+import com.agentverse.runtime.engine.AgentConfigAssembler;
+import com.agentverse.runtime.engine.ModelFactory;
 import com.agentverse.runtime.mapper.AgentDefinitionMapper;
-import io.agentscope.core.model.DashScopeChatModel;
-import io.agentscope.core.model.OpenAIChatModel;
+import io.agentscope.core.model.ChatModelBase;
 import io.agentscope.harness.agent.HarnessAgent;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.io.Serializable;
+import java.util.concurrent.ConcurrentHashMap;
+import lombok.Generated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.ConcurrentHashMap;
-
-/**
- * Agent 加载服务，从数据库配置构建可执行的 HarnessAgent 实例
- */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class AgentLoaderService {
-
+    @Generated
+    private static final Logger log = LoggerFactory.getLogger(AgentLoaderService.class);
     private final AgentDefinitionMapper agentDefinitionMapper;
     private final ModelFactory modelFactory;
+    private final AgentConfigAssembler agentConfigAssembler;
+    private final ConcurrentHashMap<String, HarnessAgent> agentCache = new ConcurrentHashMap();
+    private final ConcurrentHashMap<String, String> modelConfigIdCache = new ConcurrentHashMap();
 
-    /**
-     * Agent 实例缓存
-     */
-    private final ConcurrentHashMap<String, HarnessAgent> agentCache = new ConcurrentHashMap<>();
-
-    /**
-     * 加载或从缓存获取 HarnessAgent
-     */
     public HarnessAgent loadAgent(String agentId) {
-        return agentCache.computeIfAbsent(agentId, this::buildAgent);
+        return this.agentCache.computeIfAbsent(agentId, this::buildAgent);
     }
 
-    /**
-     * 从缓存中移除 Agent 实例
-     */
+    public HarnessAgent loadAgent(String agentId, String userId) {
+        return this.agentCache.computeIfAbsent(agentId, id -> this.buildAgentWithUser((String)id, userId));
+    }
+
+    public String getModelConfigId(String agentId) {
+        return this.modelConfigIdCache.get(agentId);
+    }
+
     public void evictAgent(String agentId) {
-        agentCache.remove(agentId);
+        this.agentCache.remove(agentId);
+        this.modelConfigIdCache.remove(agentId);
+        log.info("Evicted agent from cache: agentId={}", (Object)agentId);
     }
 
-    /**
-     * 从数据库读取配置并构建 HarnessAgent
-     */
     private HarnessAgent buildAgent(String agentId) {
-        log.info("Building HarnessAgent for agentId: {}", agentId);
+        return this.buildAgentWithUser(agentId, null);
+    }
 
-        AgentDefinition definition = agentDefinitionMapper.selectById(agentId);
+    private HarnessAgent buildAgentWithUser(String agentId, String userId) {
+        log.info("Building HarnessAgent for agentId: {}", (Object)agentId);
+        AgentDefinition definition = (AgentDefinition)this.agentDefinitionMapper.selectById((Serializable)((Object)agentId));
         if (definition == null) {
             throw new BizException(ErrorCode.AGENT_NOT_FOUND);
         }
-
-        Object model = modelFactory.createModel();
-
-        HarnessAgent.Builder builder = HarnessAgent.builder()
-                .name(definition.getName())
-                .description(definition.getDescription() != null ? definition.getDescription() : "")
-                .sysPrompt(definition.getSysPrompt() != null ? definition.getSysPrompt() : "You are a helpful assistant.")
-                .maxIters(definition.getMaxIterations() != null ? definition.getMaxIterations() : 10);
-
-        if (model instanceof DashScopeChatModel dashScopeModel) {
-            builder.model(dashScopeModel);
-        } else if (model instanceof OpenAIChatModel openAIModel) {
-            builder.model(openAIModel);
+        if ("draft".equals(definition.getStatus())) {
+            throw new BizException(ErrorCode.AGENT_NOT_PUBLISHED);
         }
-
-        HarnessAgent agent = builder.build();
-        log.info("HarnessAgent built successfully for agentId: {}", agentId);
+        if ("archived".equals(definition.getStatus())) {
+            throw new BizException(ErrorCode.AGENT_ARCHIVED);
+        }
+        ChatModelBase model = this.modelFactory.getModel(definition.getModelConfigId());
+        this.modelConfigIdCache.put(agentId, definition.getModelConfigId());
+        String effectiveUserId = userId != null ? userId : (definition.getCreatedBy() != null ? definition.getCreatedBy().toString() : "default");
+        HarnessAgent agent = this.agentConfigAssembler.assemble(definition, model, effectiveUserId);
+        log.info("HarnessAgent built successfully for agentId: {}", (Object)agentId);
         return agent;
     }
+
+    @Generated
+    public AgentLoaderService(AgentDefinitionMapper agentDefinitionMapper, ModelFactory modelFactory, AgentConfigAssembler agentConfigAssembler) {
+        this.agentDefinitionMapper = agentDefinitionMapper;
+        this.modelFactory = modelFactory;
+        this.agentConfigAssembler = agentConfigAssembler;
+    }
 }
+

@@ -1,16 +1,13 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.common.exception;
 
-import lombok.Getter;
+import com.agentverse.common.exception.ErrorCode;
+import lombok.Generated;
 
-/**
- * 业务异常
- */
-@Getter
-public class BizException extends RuntimeException {
-
-    /**
-     * 错误码
-     */
+public class BizException
+extends RuntimeException {
     private final Integer code;
 
     public BizException(String message) {
@@ -32,4 +29,10 @@ public class BizException extends RuntimeException {
         super(errorCode.getMessage() + ": " + detail);
         this.code = errorCode.getCode();
     }
+
+    @Generated
+    public Integer getCode() {
+        return this.code;
+    }
 }
+
