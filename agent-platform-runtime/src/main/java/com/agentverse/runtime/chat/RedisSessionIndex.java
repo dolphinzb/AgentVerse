@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -22,8 +23,14 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
  * 仅保存 SessionMeta（不含消息内容），消息内容由 MessageProjector 负责。
  * <p>
  * Key 形式：{@code agentverse:session:idx:<sessionId>}
+ * <p>
+ * 通过 {@link ConditionalOnBean} 保护：仅当 Spring 容器中存在
+ * {@link StringRedisTemplate}（即启用了
+ * spring.data.redis 配置）时本组件才会注册。未启用 Redis 时，自动回落到
+ * {@link InMemorySessionIndex}（标了 {@code @Primary}）。
  */
 @Component
+@ConditionalOnBean(StringRedisTemplate.class)
 public class RedisSessionIndex implements SessionIndex {
 
     private static final Logger log = LoggerFactory.getLogger(RedisSessionIndex.class);
