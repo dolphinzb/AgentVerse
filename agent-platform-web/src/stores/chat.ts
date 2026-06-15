@@ -1,4 +1,4 @@
-import { chatApi, type MessageResponse } from '@/api/chat'
+import { chatApi, type MessageResponse, type SessionResponse } from '@/api/chat'
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
@@ -47,6 +47,30 @@ export const useChatStore = defineStore('chat', () => {
       session.messages.push(res.data)
     }
     return res.data
+  }
+  /**
+   * 从后端拉取当前用户的会话列表。用于页面刷新 / 首次进入对话页时
+   * 还原左侧会话栏，避免 Pinia store 状态清空后用户看不到历史会话。
+   */
+  async function fetchSessions() {
+    const res = await chatApi.listSessions()
+    sessions.value = res.data.map((s: SessionResponse) => ({
+      sessionId: s.sessionId,
+      agentId: s.agentId,
+      agentName: s.agentName || 'Agent',
+      createdAt: s.createdAt,
+      messages: [],
+    }))
+    if (sessions.value.length > 0 && !currentSessionId.value) {
+      const first = sessions.value[0]
+      currentSessionId.value = first.sessionId
+      try {
+        const hist = await chatApi.getSessionHistory(first.sessionId)
+        first.messages = hist.data
+      } catch (e) {
+        console.warn('Failed to load history for session', first.sessionId, e)
+      }
+    }
   }
 
   async function streamMessage(sessionId: string, content: string): Promise<void> {
@@ -167,6 +191,6 @@ export const useChatStore = defineStore('chat', () => {
   return {
     sessions, currentSessionId, streaming,
     getCurrentSession, createSession, sendMessage, streamMessage,
-    fetchSessionHistory, deleteSession, interruptSession,
+    fetchSessions, fetchSessionHistory, deleteSession, interruptSession,
   }
 })

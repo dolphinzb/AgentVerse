@@ -7,6 +7,7 @@ export interface SessionCreateRequest {
 export interface SessionResponse {
   sessionId: string
   agentId: string
+  agentName?: string
   createdAt: string
 }
 
@@ -26,6 +27,9 @@ export const chatApi = {
   },
   sendMessage(sessionId: string, data: MessageRequest) {
     return request.post<any, { data: MessageResponse }>(`/v2/chat/sessions/${sessionId}/messages`, data)
+  },
+  listSessions() {
+    return request.get<any, { data: SessionResponse[] }>('/v2/chat/sessions')
   },
   getSessionHistory(sessionId: string) {
     return request.get<any, { data: MessageResponse[] }>(`/v2/chat/sessions/${sessionId}/messages`)
