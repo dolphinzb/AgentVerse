@@ -1,12 +1,14 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.runtime.mapper;
 
 import com.agentverse.common.entity.SysUser;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 
-/**
- * 用户 Mapper
- */
 @Mapper
-public interface SysUserMapper extends BaseMapper<SysUser> {
+public interface SysUserMapper
+extends BaseMapper<SysUser> {
 }
+

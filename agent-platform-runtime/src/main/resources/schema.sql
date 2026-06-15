@@ -166,7 +166,7 @@ COMMENT ON COLUMN agent_definition.description IS 'Agent 描述';
 COMMENT ON COLUMN agent_definition.sys_prompt IS '系统提示词';
 COMMENT ON COLUMN agent_definition.max_iterations IS '最大迭代次数';
 COMMENT ON COLUMN agent_definition.workspace_mode IS '工作区模式 (isolated/shared)';
-COMMENT ON COLUMN agent_definition.status IS '状态 (draft/published/archived)';
+COMMENT ON COLUMN agent_definition.status IS '状态 (draft/active/archived)';
 COMMENT ON COLUMN agent_definition.current_version IS '当前版本 ID';
 COMMENT ON COLUMN agent_definition.created_time IS '创建时间';
 COMMENT ON COLUMN agent_definition.updated_time IS '更新时间';
@@ -185,3 +185,96 @@ COMMENT ON COLUMN agent_version.updated_time IS '更新时间';
 COMMENT ON COLUMN agent_version.created_by IS '创建人 ID';
 COMMENT ON COLUMN agent_version.updated_by IS '更新人 ID';
 COMMENT ON COLUMN agent_version.deleted IS '逻辑删除标志 (0:未删除, 1:已删除)';
+
+-- ============================================================
+-- 模型管理表（Phase 3）
+-- ============================================================
+
+-- Phase 3: 模型管理
+CREATE TABLE IF NOT EXISTS model_provider (
+    id                VARCHAR(64) PRIMARY KEY,
+    name              VARCHAR(128) NOT NULL,
+    provider_type     VARCHAR(32) NOT NULL,
+    api_key_encrypted TEXT NOT NULL,
+    base_url          VARCHAR(512),
+    custom_headers    TEXT,
+    status            VARCHAR(16) DEFAULT 'active',
+    created_time      TIMESTAMP NOT NULL,
+    updated_time      TIMESTAMP NOT NULL,
+    created_by        BIGINT,
+    updated_by        VARCHAR(64),
+    deleted           INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS model_config (
+    id              VARCHAR(64) PRIMARY KEY,
+    provider_id     VARCHAR(64) NOT NULL,
+    model_name      VARCHAR(128) NOT NULL,
+    display_name    VARCHAR(128),
+    max_tokens      INTEGER DEFAULT 4096,
+    temperature     DOUBLE PRECISION DEFAULT 0.7,
+    top_p           DOUBLE PRECISION DEFAULT 0.9,
+    is_default      INTEGER DEFAULT 0,
+    status          VARCHAR(16) DEFAULT 'active',
+    created_time    TIMESTAMP NOT NULL,
+    updated_time    TIMESTAMP NOT NULL,
+    created_by      BIGINT,
+    updated_by      VARCHAR(64),
+    deleted         INTEGER DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS chat_usage (
+    id              VARCHAR(64) PRIMARY KEY,
+    session_id      VARCHAR(64) NOT NULL,
+    model_config_id VARCHAR(64) NOT NULL,
+    input_tokens    BIGINT DEFAULT 0,
+    output_tokens   BIGINT DEFAULT 0,
+    created_time    TIMESTAMP NOT NULL
+);
+
+-- 修改 agent_definition 表
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS model_config_id VARCHAR(64) DEFAULT '';
+
+-- ============================================================
+-- Phase 4: 生产运行时
+-- ============================================================
+
+-- 迭代 4.1: Agent 运行时配置字段
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS filesystem_type VARCHAR(16) DEFAULT 'local';
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_memory_flush INTEGER DEFAULT 1;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_memory_maintenance INTEGER DEFAULT 1;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_compaction INTEGER DEFAULT 0;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS compaction_trigger_pct INTEGER DEFAULT 80;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS compaction_keep_recent INTEGER DEFAULT 10;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_tool_result_eviction INTEGER DEFAULT 0;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS tool_result_eviction_max_chars INTEGER DEFAULT 4000;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_long_term_memory INTEGER DEFAULT 0;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_plan INTEGER DEFAULT 0;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS enable_session_persistence INTEGER DEFAULT 1;
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS session_backend VARCHAR(16) DEFAULT 'redis';
+ALTER TABLE agent_definition ADD COLUMN IF NOT EXISTS max_context_tokens INTEGER DEFAULT 8000;
+
+-- 迭代 4.2: Agent 实例追踪
+CREATE TABLE IF NOT EXISTS agent_instance (
+    id              VARCHAR(64) PRIMARY KEY,
+    agent_id        VARCHAR(64) NOT NULL,
+    session_id      VARCHAR(64),
+    status          VARCHAR(16) DEFAULT 'active',
+    started_at      TIMESTAMP NOT NULL,
+    last_active_at  TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_instance_agent_id ON agent_instance(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_instance_status ON agent_instance(status);
+
+-- 迭代 4.3: 长期记忆
+CREATE TABLE IF NOT EXISTS agent_long_term_memory (
+    id              VARCHAR(64) PRIMARY KEY,
+    agent_id        VARCHAR(64) NOT NULL,
+    memory_type     VARCHAR(32) NOT NULL,
+    content         TEXT NOT NULL,
+    metadata_json   TEXT,
+    created_time    TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_agent_long_term_memory_agent_id ON agent_long_term_memory(agent_id);

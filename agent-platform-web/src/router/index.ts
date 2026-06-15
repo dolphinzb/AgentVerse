@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router'
 import Layout from '@/components/Layout.vue'
+import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -39,6 +39,11 @@ const router = createRouter({
           path: 'chat',
           name: 'Chat',
           component: () => import('@/views/ChatView.vue'),
+        },
+        {
+          path: 'models',
+          name: 'ModelManagement',
+          component: () => import('@/views/ModelManagement.vue'),
         },
         {
           path: 'admin/audit-logs',

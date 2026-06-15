@@ -1,124 +1,134 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.runtime.controller;
 
-import com.agentverse.common.dto.*;
+import com.agentverse.common.dto.AgentCreateRequest;
+import com.agentverse.common.dto.AgentListResponse;
+import com.agentverse.common.dto.AgentPublishRequest;
+import com.agentverse.common.dto.AgentResponse;
+import com.agentverse.common.dto.AgentUpdateRequest;
+import com.agentverse.common.dto.AgentVersionResponse;
+import com.agentverse.common.dto.ApiResponse;
 import com.agentverse.runtime.security.RequirePermission;
 import com.agentverse.runtime.service.AgentDefinitionService;
 import com.agentverse.runtime.service.AgentVersionService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import lombok.Generated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Agent 控制器
- */
-@Slf4j
 @RestController
-@RequestMapping("/v1/agents")
-@RequiredArgsConstructor
+@RequestMapping(value={"/v1/agents"})
 public class AgentController {
-
+    @Generated
+    private static final Logger log = LoggerFactory.getLogger(AgentController.class);
     private final AgentDefinitionService agentDefinitionService;
     private final AgentVersionService agentVersionService;
 
-    /**
-     * 创建 Agent
-     */
-    @RequirePermission("agent:create")
+    @RequirePermission(value="agent:create")
     @PostMapping
-    public ResponseEntity<ApiResponse<AgentResponse>> createAgent(
-            @Valid @RequestBody AgentCreateRequest request) {
-        log.info("Received create agent request: {}", request.getName());
-        AgentResponse agent = agentDefinitionService.createAgent(request);
+    public ResponseEntity<ApiResponse<AgentResponse>> createAgent(@Valid @RequestBody AgentCreateRequest request) {
+        log.info("Received create agent request: {}", (Object)request.getName());
+        AgentResponse agent = this.agentDefinitionService.createAgent(request);
         return ResponseEntity.ok(ApiResponse.success(agent));
     }
 
-    /**
-     * 根据 ID 查询 Agent
-     */
-    @RequirePermission("agent:read")
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<AgentResponse>> getAgentById(@PathVariable("id") String id) {
-        log.info("Received get agent request: {}", id);
-        AgentResponse agent = agentDefinitionService.getAgentById(id);
+    @RequirePermission(value="agent:read")
+    @GetMapping(value={"/{id}"})
+    public ResponseEntity<ApiResponse<AgentResponse>> getAgentById(@PathVariable(value="id") String id) {
+        log.info("Received get agent request: {}", (Object)id);
+        AgentResponse agent = this.agentDefinitionService.getAgentById(id);
         return ResponseEntity.ok(ApiResponse.success(agent));
     }
 
-    /**
-     * 分页查询 Agent 列表
-     */
-    @RequirePermission("agent:read")
+    @RequirePermission(value="agent:read")
     @GetMapping
-    public ResponseEntity<ApiResponse<AgentListResponse>> listAgents(
-            @RequestParam(name = "page", defaultValue = "1") Integer page,
-            @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
-            @RequestParam(name = "status", required = false) String status) {
-        log.info("Received list agents request: page={}, pageSize={}, status={}", page, pageSize, status);
-        AgentListResponse result = agentDefinitionService.listAgents(page, pageSize, status);
+    public ResponseEntity<ApiResponse<AgentListResponse>> listAgents(@RequestParam(name="page", defaultValue="1") Integer page, @RequestParam(name="pageSize", defaultValue="10") Integer pageSize, @RequestParam(name="status", required=false) String status) {
+        log.info("Received list agents request: page={}, pageSize={}, status={}", new Object[]{page, pageSize, status});
+        AgentListResponse result = this.agentDefinitionService.listAgents(page, pageSize, status);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
-    /**
-     * 更新 Agent
-     */
-    @RequirePermission("agent:update")
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<AgentResponse>> updateAgent(
-            @PathVariable("id") String id,
-            @Valid @RequestBody AgentUpdateRequest request) {
-        log.info("Received update agent request: {}", id);
-        AgentResponse agent = agentDefinitionService.updateAgent(id, request);
+    @RequirePermission(value="agent:update")
+    @PutMapping(value={"/{id}"})
+    public ResponseEntity<ApiResponse<AgentResponse>> updateAgent(@PathVariable(value="id") String id, @Valid @RequestBody AgentUpdateRequest request) {
+        log.info("Received update agent request: {}", (Object)id);
+        AgentResponse agent = this.agentDefinitionService.updateAgent(id, request);
         return ResponseEntity.ok(ApiResponse.success(agent));
     }
 
-    /**
-     * 删除 Agent
-     */
-    @RequirePermission("agent:delete")
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteAgent(@PathVariable("id") String id) {
-        log.info("Received delete agent request: {}", id);
-        agentDefinitionService.deleteAgent(id);
+    @RequirePermission(value="agent:delete")
+    @DeleteMapping(value={"/{id}"})
+    public ResponseEntity<ApiResponse<Void>> deleteAgent(@PathVariable(value="id") String id) {
+        log.info("Received delete agent request: {}", (Object)id);
+        this.agentDefinitionService.deleteAgent(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
-    /**
-     * 发布版本
-     */
-    @RequirePermission("agent:publish")
-    @PostMapping("/{id}/publish")
-    public ResponseEntity<ApiResponse<AgentVersionResponse>> publishVersion(
-            @PathVariable("id") String id,
-            @Valid @RequestBody AgentPublishRequest request) {
-        log.info("Received publish version request for agent {}: {}", id, request.getVersion());
-        AgentVersionResponse version = agentVersionService.publishVersion(id, request);
+    @RequirePermission(value="agent:publish")
+    @PostMapping(value={"/{id}/publish"})
+    public ResponseEntity<ApiResponse<AgentVersionResponse>> publishVersion(@PathVariable(value="id") String id, @Valid @RequestBody AgentPublishRequest request) {
+        log.info("Received publish version request for agent {}: {}", (Object)id, (Object)request.getVersion());
+        AgentVersionResponse version = this.agentVersionService.publishVersion(id, request);
         return ResponseEntity.ok(ApiResponse.success(version));
     }
 
-    /**
-     * 查询版本历史
-     */
-    @RequirePermission("agent:read")
-    @GetMapping("/{id}/versions")
-    public ResponseEntity<ApiResponse<List<AgentVersionResponse>>> listVersions(@PathVariable("id") String id) {
-        log.info("Received list versions request for agent {}", id);
-        List<AgentVersionResponse> versions = agentVersionService.listVersions(id);
+    @RequirePermission(value="agent:read")
+    @GetMapping(value={"/{id}/versions"})
+    public ResponseEntity<ApiResponse<List<AgentVersionResponse>>> listVersions(@PathVariable(value="id") String id) {
+        log.info("Received list versions request for agent {}", (Object)id);
+        List<AgentVersionResponse> versions = this.agentVersionService.listVersions(id);
         return ResponseEntity.ok(ApiResponse.success(versions));
     }
 
-    /**
-     * 回滚版本
-     */
-    @RequirePermission("agent:update")
-    @PostMapping("/{id}/rollback")
-    public ResponseEntity<ApiResponse<AgentVersionResponse>> rollbackVersion(
-            @PathVariable("id") String id,
-            @RequestParam("version") String version) {
-        log.info("Received rollback request for agent {} to version {}", id, version);
-        AgentVersionResponse versionResponse = agentVersionService.rollbackVersion(id, version);
+    @RequirePermission(value="agent:update")
+    @PostMapping(value={"/{id}/rollback"})
+    public ResponseEntity<ApiResponse<AgentVersionResponse>> rollbackVersion(@PathVariable(value="id") String id, @RequestParam(value="version") String version) {
+        log.info("Received rollback request for agent {} to version {}", (Object)id, (Object)version);
+        AgentVersionResponse versionResponse = this.agentVersionService.rollbackVersion(id, version);
         return ResponseEntity.ok(ApiResponse.success(versionResponse));
     }
+
+    @RequirePermission(value="agent:publish")
+    @PostMapping(value={"/{id}/lifecycle/publish"})
+    public ResponseEntity<ApiResponse<Void>> publishAgent(@PathVariable(value="id") String id) {
+        log.info("Received publish agent request: {}", (Object)id);
+        this.agentDefinitionService.publishAgent(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @RequirePermission(value="agent:archive")
+    @PostMapping(value={"/{id}/lifecycle/archive"})
+    public ResponseEntity<ApiResponse<Void>> archiveAgent(@PathVariable(value="id") String id) {
+        log.info("Received archive agent request: {}", (Object)id);
+        this.agentDefinitionService.archiveAgent(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @RequirePermission(value="agent:publish")
+    @PostMapping(value={"/{id}/lifecycle/reactivate"})
+    public ResponseEntity<ApiResponse<Void>> reactivateAgent(@PathVariable(value="id") String id) {
+        log.info("Received reactivate agent request: {}", (Object)id);
+        this.agentDefinitionService.reactivateAgent(id);
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
+    @Generated
+    public AgentController(AgentDefinitionService agentDefinitionService, AgentVersionService agentVersionService) {
+        this.agentDefinitionService = agentDefinitionService;
+        this.agentVersionService = agentVersionService;
+    }
 }
+

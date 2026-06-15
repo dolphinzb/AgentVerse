@@ -6,7 +6,8 @@
         <el-select v-model="statusFilter" placeholder="状态筛选" clearable style="width: 140px; margin-right: 12px" @change="handleSearch">
           <el-option label="全部" value="" />
           <el-option label="草稿" value="draft" />
-          <el-option label="已发布" value="published" />
+          <el-option label="已发布" value="active" />
+          <el-option label="归档" value="archived" />
         </el-select>
         <el-button v-permission="'agent:create'" type="primary" @click="showCreateDialog = true">创建 Agent</el-button>
       </div>
@@ -17,8 +18,8 @@
       <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status === 'published' ? 'success' : 'info'" size="small">
-            {{ row.status === 'published' ? '已发布' : '草稿' }}
+          <el-tag :type="statusTagType(row.status)" size="small">
+            {{ statusLabel(row.status) }}
           </el-tag>
         </template>
       </el-table-column>
@@ -68,11 +69,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { useAgentStore } from '@/stores/agent'
 import type { AgentResponse } from '@/api/agent'
+import { useAgentStore } from '@/stores/agent'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const agentStore = useAgentStore()
@@ -95,6 +96,23 @@ const form = ref({
 
 function fetchData() {
   agentStore.fetchAgents(page.value, pageSize.value, statusFilter.value || undefined)
+}
+
+/**
+ * Agent 状态 → 中文标签。
+ * 与后端 AgentDefinitionService 中 status 字段保持一致：draft / active / archived。
+ */
+function statusLabel(status?: string): string {
+  if (status === 'active') return '已发布'
+  if (status === 'archived') return '归档'
+  return '草稿'
+}
+
+/** Agent 状态 → el-tag 类型。 */
+function statusTagType(status?: string): 'success' | 'warning' | 'info' {
+  if (status === 'active') return 'success'
+  if (status === 'archived') return 'warning'
+  return 'info'
 }
 
 function handleSearch() {

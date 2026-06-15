@@ -9,12 +9,12 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://10.20.16.122:30432/biview?currentSchema=biview&useUnicode=true&characterEncoding=utf-8
+    url: jdbc:postgresql://10.20.16.122:30432/biview?currentSchema=javanna&useUnicode=true&characterEncoding=utf-8
     username: biview
     password: biview@2023
   sql:
     init:
-      mode: always
+      mode: never
       schema-locations: classpath:schema.sql
       data-locations: classpath:data.sql
       continue-on-error: true
@@ -24,6 +24,19 @@ spring:
     time-zone: GMT+8
     serialization:
       write-dates-as-timestamps: false
+
+  # Redis（StringRedisTemplate 用于 InterruptBus Pub/Sub；未配置时降级为 LocalInterruptBus）
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 1
 
 # MyBatis-Plus 配置
 mybatis-plus:
@@ -53,10 +66,16 @@ logging:
 
 # AgentScope 配置（硬编码模型参数）
 agent:
+  encryption-key: ${AGENTVERSE_ENCRYPTION_KEY:AgentVerse-AES256-Encryption-Key-2024!}
+  # 跨实例中断后端：redis 走 Pub/Sub，local 走单实例 ConcurrentHashMap；redis 不可用时自动降级
+  interrupt:
+    backend: ${AGENT_INTERRUPT_BACKEND:local}
+    redis:
+      channel-prefix: ${AGENT_INTERRUPT_CHANNEL_PREFIX:agentverse:interrupt:}
   model:
     provider: dashscope
     name: qwen3.6-plus-2026-04-02
-    api-key: sk-fe6ff5901b0042cda9ffe7b2a74cd46e
+    api-key: ${AGENTVERSE_DASHSCOPE_API_KEY:sk-fe6ff5901b0042cda9ffe7b2a74cd46e}
     temperature: 0.7
     max-tokens: 4096
     top-p: 0.9

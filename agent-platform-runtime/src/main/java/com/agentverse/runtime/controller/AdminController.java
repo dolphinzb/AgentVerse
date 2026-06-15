@@ -1,3 +1,6 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.runtime.controller;
 
 import com.agentverse.common.dto.ApiResponse;
@@ -5,46 +8,35 @@ import com.agentverse.common.dto.PageResult;
 import com.agentverse.common.entity.AuditLog;
 import com.agentverse.runtime.mapper.AuditLogMapper;
 import com.agentverse.runtime.security.RequirePermission;
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.LocalDateTime;
+import lombok.Generated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-
-/**
- * 管理后台控制器
- */
-@Slf4j
 @RestController
-@RequestMapping("/v1/admin")
-@RequiredArgsConstructor
+@RequestMapping(value={"/v1/admin"})
 public class AdminController {
-
+    @Generated
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
     private final AuditLogMapper auditLogMapper;
 
-    /**
-     * 查询审计日志（分页 + 筛选）
-     */
-    @RequirePermission("admin:audit")
-    @GetMapping("/audit-logs")
-    public ResponseEntity<ApiResponse<PageResult<AuditLog>>> listAuditLogs(
-            @RequestParam(defaultValue = "1") Integer page,
-            @RequestParam(defaultValue = "20") Integer pageSize,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime,
-            @RequestParam(required = false) String action,
-            @RequestParam(required = false) Long userId) {
-
+    @RequirePermission(value="admin:audit")
+    @GetMapping(value={"/audit-logs"})
+    public ResponseEntity<ApiResponse<PageResult<AuditLog>>> listAuditLogs(@RequestParam(defaultValue="1") Integer page, @RequestParam(defaultValue="20") Integer pageSize, @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime, @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime, @RequestParam(required=false) String action, @RequestParam(required=false) Long userId) {
         log.info("Query audit logs: page={}, pageSize={}, action={}, userId={}", page, pageSize, action, userId);
-
-        Page<AuditLog> pageParam = new Page<>(page, pageSize);
+        Page<AuditLog> pageParam = new Page<>(page.longValue(), pageSize.longValue());
         LambdaQueryWrapper<AuditLog> queryWrapper = new LambdaQueryWrapper<>();
-
         if (startTime != null) {
             queryWrapper.ge(AuditLog::getCreatedTime, startTime);
         }
@@ -57,13 +49,15 @@ public class AdminController {
         if (userId != null) {
             queryWrapper.eq(AuditLog::getUserId, userId);
         }
-
         queryWrapper.orderByDesc(AuditLog::getCreatedTime);
-
-        Page<AuditLog> result = auditLogMapper.selectPage(pageParam, queryWrapper);
-
-        PageResult<AuditLog> pageResult = new PageResult<>(
-                result.getRecords(), result.getTotal(), (long) page, (long) pageSize);
+        Page<AuditLog> result = this.auditLogMapper.selectPage(pageParam, queryWrapper);
+        PageResult<AuditLog> pageResult = new PageResult<>(result.getRecords(), result.getTotal(), page.longValue(), pageSize.longValue());
         return ResponseEntity.ok(ApiResponse.success(pageResult));
     }
+
+    @Generated
+    public AdminController(AuditLogMapper auditLogMapper) {
+        this.auditLogMapper = auditLogMapper;
+    }
 }
+

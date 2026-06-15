@@ -81,7 +81,11 @@
                 <artifactId>agentscope-harness</artifactId>
                 <version>${agentscope.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>io.agentscope</groupId>
+                <artifactId>agentscope-extensions-session-redis</artifactId>
+                <version>${agentscope.version}</version>
+            </dependency>
             <!-- Hutool -->
             <dependency>
                 <groupId>cn.hutool</groupId>

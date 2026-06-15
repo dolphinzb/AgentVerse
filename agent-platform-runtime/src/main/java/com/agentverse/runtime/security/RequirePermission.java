@@ -1,17 +1,18 @@
+/*
+ * Decompiled with CFR 0.152.
+ */
 package com.agentverse.runtime.security;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * 权限校验注解，标注在 Controller 方法上
- */
-@Target({ElementType.METHOD, ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
+@Target(value={ElementType.METHOD, ElementType.TYPE})
+@Retention(value=RetentionPolicy.RUNTIME)
 @Documented
 public @interface RequirePermission {
-
-    /**
-     * 所需权限代码，格式: module:action
-     */
-    String value();
+    public String value();
 }
+

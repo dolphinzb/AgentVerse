@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>agent-platform-runtime</artifactId>
-    <packaging>jar</packaging>
+    <packaging>jar</packaging> 
 
     <name>AgentVerse Platform Runtime</name>
     <description>Runtime module with Spring Boot application and agent execution engine</description>
@@ -42,6 +42,12 @@
             <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
 
+        <!-- Redis (StringRedisTemplate 用于 InterruptBus Pub/Sub) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+
         <!-- MyBatis-Plus -->
         <dependency>
             <groupId>com.baomidou</groupId>
@@ -58,6 +64,11 @@
         <dependency>
             <groupId>io.agentscope</groupId>
             <artifactId>agentscope-harness</artifactId>
+        </dependency>
+        <!-- Session Redis 后端:提供 io.agentscope.core.session.redis.RedisSession -->
+        <dependency>
+            <groupId>io.agentscope</groupId>
+            <artifactId>agentscope-extensions-session-redis</artifactId>
         </dependency>
 
         <!-- Lombok -->

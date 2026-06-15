@@ -39,38 +39,41 @@ export const useChatStore = defineStore('chat', () => {
     return session
   }
 
-  async function sendMessage(sessionId: string, content: string) {
-    const res = await chatApi.sendMessage(sessionId, { content })
-    const session = sessions.value.find(s => s.sessionId === sessionId)
-    if (session) {
-      session.messages.push({ role: 'user', content, timestamp: new Date().toISOString() })
-      session.messages.push(res.data)
-    }
-    return res.data
-  }
-
-  async function streamMessage(sessionId: string, content: string): Promise<void> {
-    const log = (msg: string, ...args: any[]) => console.log(`[${new Date().toISOString()}] ${msg}`, ...args)
-
-    log('streamMessage started, sessionId:', sessionId)
+  /**
+   * SSE 流式消息：与后端 /v2/chat/sessions/{id}/stream 建立长连接，
+   * 把数据块累积到当前会话中新增的占位 assistant 消息上
+   */
+  async function streamMessage(sessionId: string, content: string) {
     const session = sessions.value.find(s => s.sessionId === sessionId)
     if (!session) {
-      log('session not found, returning')
+      console.warn('[stream] session not found:', sessionId)
       return
     }
-
-    session.messages.push({ role: 'user', content, timestamp: new Date().toISOString() } as MessageResponse)
-    const assistantMsg = reactive<MessageResponse>({ role: 'assistant', content: '', timestamp: new Date().toISOString() })
-    session.messages.push(assistantMsg as MessageResponse)
+    // 占位 assistant 消息：边收边往 content 上追加，reactive 保证视图自动更新
+    const assistantMsg: ReactiveMessage = reactive({
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    })
+    session.messages.push(assistantMsg)
     streaming.value = true
-    log('streaming set to true')
 
+    // 简单日志封装：调试 SSE 用
+    const log = (...args: any[]) => console.log('[stream]', ...args)
     const controller = new AbortController()
     const signal = controller.signal
-
     try {
       log('about to fetch...')
-      const response = await fetch(`/api/v1/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`, { signal })
+      // 原生 fetch 不会经过 request.ts 的 axios 拦截器，需要手动塞 Bearer 头
+      const token = localStorage.getItem('agentverse_token')
+      const headers: Record<string, string> = { Accept: 'text/event-stream' }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+      const response = await fetch(
+        `/api/v2/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`,
+        { signal, headers },
+      )
       log('fetch completed, response:', response.status, response.statusText)
       log('response.body:', response.body)
 
@@ -155,9 +158,50 @@ export const useChatStore = defineStore('chat', () => {
     streaming.value = false
   }
 
+  /**
+   * 非流式发送：直接走 REST 接口，返回完整 assistant 回复后插入到当前会话
+   * 留作 streamMessage 不可用时的兜底（ChatView.handleSend 在 catch 路径会调用）
+   */
+  async function sendMessage(sessionId: string, content: string) {
+    const session = sessions.value.find(s => s.sessionId === sessionId)
+    if (!session) return
+    // 记录用户消息
+    session.messages.push({
+      role: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    } as MessageResponse)
+    streaming.value = true
+    try {
+      const res = await chatApi.sendMessage(sessionId, { content })
+      session.messages.push(res.data)
+    } finally {
+      streaming.value = false
+    }
+  }
+
+  /**
+   * F5 / 首次进入对话页时调用：从后端还原当前用户的会话列表，
+   * 自动选中第一个会话并加载历史
+   */
+  async function fetchSessions() {
+    const res = await chatApi.listSessions()
+    sessions.value = res.data.map(s => ({
+      sessionId: s.sessionId,
+      agentId: s.agentId,
+      agentName: s.agentName,
+      createdAt: s.createdAt,
+      messages: [],
+    }))
+    if (sessions.value.length > 0 && !currentSessionId.value) {
+      currentSessionId.value = sessions.value[0].sessionId
+      await fetchSessionHistory(sessions.value[0].sessionId)
+    }
+  }
+
   return {
     sessions, currentSessionId, streaming,
     getCurrentSession, createSession, sendMessage, streamMessage,
-    fetchSessionHistory, deleteSession, interruptSession,
+    fetchSessions, fetchSessionHistory, deleteSession, interruptSession,
   }
 })

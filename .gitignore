@@ -62,6 +62,8 @@ build-local.bat
 *.bak
 *.swp
 *~
+.tmp/
+.tmp/**
 
 .trae/
 .claude/
@@ -79,3 +81,4 @@ agent-platform-web/package-lock.json
 agent-platform-web/.DS_Store
 
 openspec/
+workspace/
