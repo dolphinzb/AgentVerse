@@ -34,7 +34,7 @@
 | POST | /v1/model-providers | 创建 Provider | model:create |
 | PUT | /v1/model-providers/{id} | 更新 Provider | model:update |
 | DELETE | /v1/model-providers/{id} | 删除 Provider（有关联 ModelConfig 时拒绝） | model:delete |
-| POST | /v1/model-providers/{id}/test | 连接测试（已保存的 Provider） | model:update |
+| POST | /v1/model-providers/{id}/test | 连接测试（已保存的 Provider，可选指定 modelName） | model:update |
 | POST | /v1/model-providers/test-connection | 连接测试（无需保存，前端填表单时直接测试） | model:create |
 
 ## ProviderType 枚举
