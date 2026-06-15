@@ -9,6 +9,10 @@
           <el-icon><Monitor /></el-icon>
           <template #title>Agent 管理</template>
         </el-menu-item>
+        <el-menu-item index="/models">
+          <el-icon><Cpu /></el-icon>
+          <template #title>模型管理</template>
+        </el-menu-item>
         <el-menu-item index="/chat">
           <el-icon><ChatDotRound /></el-icon>
           <template #title>对话</template>
@@ -41,10 +45,10 @@
 </template>
 
 <script setup lang="ts">
+import { useUserStore } from '@/stores/user'
+import { ChatDotRound, Cpu, Document, Expand, Fold, Monitor } from '@element-plus/icons-vue'
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Monitor, ChatDotRound, Fold, Expand, Document } from '@element-plus/icons-vue'
-import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
 const router = useRouter()

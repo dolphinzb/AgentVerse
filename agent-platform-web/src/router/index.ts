@@ -41,6 +41,11 @@ const router = createRouter({
           component: () => import('@/views/ChatView.vue'),
         },
         {
+          path: 'models',
+          name: 'ModelManagement',
+          component: () => import('@/views/ModelManagement.vue'),
+        },
+        {
           path: 'admin/audit-logs',
           name: 'AuditLog',
           component: () => import('@/views/AuditLogView.vue'),

@@ -28,12 +28,13 @@ import { useModelStore } from '@/stores/model'
 
 const modelStore = useModelStore()
 
+/** 千分位格式化大数字。 */
 function formatNumber(num: number): string {
   if (num === undefined || num === null) return '0'
   return num.toLocaleString()
 }
 
-onMounted(async () => {
-  await modelStore.fetchStats()
+onMounted(() => {
+  modelStore.fetchStats()
 })
 </script>
