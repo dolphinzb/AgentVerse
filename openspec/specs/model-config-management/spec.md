@@ -33,8 +33,9 @@
 | GET | /v1/model-configs/{id} | 模型配置详情 | model:read |
 | GET | /v1/model-configs/default | 当前用户默认模型 | model:read |
 | POST | /v1/model-configs | 创建模型配置 | model:create |
-| PUT | /v1/model-configs/{id} | 更新模型配置 | model:update |
+| PUT | /v1/model-configs/{id} | 更新模型配置（支持 displayName、modelName、maxTokens、temperature、topP、isDefault） | model:update |
 | DELETE | /v1/model-configs/{id} | 删除模型配置（有 Agent 引用时拒绝） | model:delete |
+| POST | /v1/model-configs/{id}/test | 测试模型配置连接（通过 configId，使用关联的 Provider 和配置的 modelName） | model:update |
 | POST | /v1/models/add | 一步添加模型（合并 Provider + ModelConfig） | model:create |
 
 ## 一步添加模型逻辑

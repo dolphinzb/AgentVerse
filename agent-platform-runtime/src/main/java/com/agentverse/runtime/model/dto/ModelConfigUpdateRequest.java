@@ -7,8 +7,10 @@ import jakarta.validation.constraints.Size;
 import lombok.Generated;
 
 public class ModelConfigUpdateRequest {
-    @Size(max=128)
-    private @Size(max=128) String displayName;
+    @Size(max = 128)
+    private @Size(max = 128) String displayName;
+    @Size(max = 128)
+    private @Size(max = 128) String modelName;
     private Integer maxTokens;
     private Double temperature;
     private Double topP;
@@ -22,6 +24,11 @@ public class ModelConfigUpdateRequest {
     @Generated
     public String getDisplayName() {
         return this.displayName;
+    }
+
+    @Generated
+    public String getModelName() {
+        return this.modelName;
     }
 
     @Generated
@@ -52,6 +59,11 @@ public class ModelConfigUpdateRequest {
     @Generated
     public void setDisplayName(String displayName) {
         this.displayName = displayName;
+    }
+
+    @Generated
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
     }
 
     @Generated
@@ -87,28 +99,29 @@ public class ModelConfigUpdateRequest {
         if (!(o instanceof ModelConfigUpdateRequest)) {
             return false;
         }
-        ModelConfigUpdateRequest other = (ModelConfigUpdateRequest)o;
+        ModelConfigUpdateRequest other = (ModelConfigUpdateRequest) o;
         if (!other.canEqual(this)) {
             return false;
         }
         Integer this$maxTokens = this.getMaxTokens();
         Integer other$maxTokens = other.getMaxTokens();
-        if (this$maxTokens == null ? other$maxTokens != null : !((Object)this$maxTokens).equals(other$maxTokens)) {
+        if (this$maxTokens == null ? other$maxTokens != null : !((Object) this$maxTokens).equals(other$maxTokens)) {
             return false;
         }
         Double this$temperature = this.getTemperature();
         Double other$temperature = other.getTemperature();
-        if (this$temperature == null ? other$temperature != null : !((Object)this$temperature).equals(other$temperature)) {
+        if (this$temperature == null ? other$temperature != null
+                : !((Object) this$temperature).equals(other$temperature)) {
             return false;
         }
         Double this$topP = this.getTopP();
         Double other$topP = other.getTopP();
-        if (this$topP == null ? other$topP != null : !((Object)this$topP).equals(other$topP)) {
+        if (this$topP == null ? other$topP != null : !((Object) this$topP).equals(other$topP)) {
             return false;
         }
         Integer this$isDefault = this.getIsDefault();
         Integer other$isDefault = other.getIsDefault();
-        if (this$isDefault == null ? other$isDefault != null : !((Object)this$isDefault).equals(other$isDefault)) {
+        if (this$isDefault == null ? other$isDefault != null : !((Object) this$isDefault).equals(other$isDefault)) {
             return false;
         }
         String this$displayName = this.getDisplayName();
@@ -131,13 +144,13 @@ public class ModelConfigUpdateRequest {
         int PRIME = 59;
         int result = 1;
         Integer $maxTokens = this.getMaxTokens();
-        result = result * 59 + ($maxTokens == null ? 43 : ((Object)$maxTokens).hashCode());
+        result = result * 59 + ($maxTokens == null ? 43 : ((Object) $maxTokens).hashCode());
         Double $temperature = this.getTemperature();
-        result = result * 59 + ($temperature == null ? 43 : ((Object)$temperature).hashCode());
+        result = result * 59 + ($temperature == null ? 43 : ((Object) $temperature).hashCode());
         Double $topP = this.getTopP();
-        result = result * 59 + ($topP == null ? 43 : ((Object)$topP).hashCode());
+        result = result * 59 + ($topP == null ? 43 : ((Object) $topP).hashCode());
         Integer $isDefault = this.getIsDefault();
-        result = result * 59 + ($isDefault == null ? 43 : ((Object)$isDefault).hashCode());
+        result = result * 59 + ($isDefault == null ? 43 : ((Object) $isDefault).hashCode());
         String $displayName = this.getDisplayName();
         result = result * 59 + ($displayName == null ? 43 : $displayName.hashCode());
         String $status = this.getStatus();
@@ -147,7 +160,8 @@ public class ModelConfigUpdateRequest {
 
     @Generated
     public String toString() {
-        return "ModelConfigUpdateRequest(displayName=" + this.getDisplayName() + ", maxTokens=" + this.getMaxTokens() + ", temperature=" + this.getTemperature() + ", topP=" + this.getTopP() + ", isDefault=" + this.getIsDefault() + ", status=" + this.getStatus() + ")";
+        return "ModelConfigUpdateRequest(displayName=" + this.getDisplayName() + ", maxTokens=" + this.getMaxTokens()
+                + ", temperature=" + this.getTemperature() + ", topP=" + this.getTopP() + ", isDefault="
+                + this.getIsDefault() + ", status=" + this.getStatus() + ")";
     }
 }
-

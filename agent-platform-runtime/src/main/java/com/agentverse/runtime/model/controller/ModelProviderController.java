@@ -70,7 +70,7 @@ public class ModelProviderController {
     @RequirePermission(value = "model:read")
     @GetMapping(value = { "/{id}" })
     public ResponseEntity<ApiResponse<ProviderResponse>> getProviderById(@PathVariable(value = "id") String id) {
-        log.info("查询模型供应商: {}", (Object) id);
+        log.info("查询模型供应商: {}", id);
         ProviderResponse provider = this.modelProviderService.getProviderById(id);
         return ResponseEntity.ok(ApiResponse.success(provider));
     }
@@ -79,7 +79,7 @@ public class ModelProviderController {
     @PostMapping
     public ResponseEntity<ApiResponse<ProviderResponse>> createProvider(
             @Valid @RequestBody ProviderCreateRequest request) {
-        log.info("创建模型供应商: {}", (Object) request.getName());
+        log.info("创建模型供应商: {}", request.getName());
         ProviderResponse provider = this.modelProviderService.createProvider(request);
         return ResponseEntity.ok(ApiResponse.success(provider));
     }
@@ -88,7 +88,7 @@ public class ModelProviderController {
     @PutMapping(value = { "/{id}" })
     public ResponseEntity<ApiResponse<ProviderResponse>> updateProvider(@PathVariable(value = "id") String id,
             @Valid @RequestBody ProviderUpdateRequest request) {
-        log.info("更新模型供应商: {}", (Object) id);
+        log.info("更新模型供应商: {}", id);
         ProviderResponse provider = this.modelProviderService.updateProvider(id, request);
         return ResponseEntity.ok(ApiResponse.success(provider));
     }
@@ -96,16 +96,18 @@ public class ModelProviderController {
     @RequirePermission(value = "model:delete")
     @DeleteMapping(value = { "/{id}" })
     public ResponseEntity<ApiResponse<Void>> deleteProvider(@PathVariable(value = "id") String id) {
-        log.info("删除模型供应商: {}", (Object) id);
+        log.info("删除模型供应商: {}", id);
         this.modelProviderService.deleteProvider(id);
         return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @RequirePermission(value = "model:update")
     @PostMapping(value = { "/{id}/test" })
-    public ResponseEntity<ApiResponse<ConnectionTestResult>> testConnection(@PathVariable(value = "id") String id) {
-        log.info("测试模型供应商连接: {}", (Object) id);
-        ConnectionTestResult result = this.modelProviderService.testConnection(id);
+    public ResponseEntity<ApiResponse<ConnectionTestResult>> testConnection(
+            @PathVariable(value = "id") String id,
+            @RequestParam(value = "modelName", required = false) String modelName) {
+        log.info("测试模型供应商连接: id={}, modelName={}", id, modelName);
+        ConnectionTestResult result = this.modelProviderService.testConnection(id, modelName);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
 
@@ -113,7 +115,7 @@ public class ModelProviderController {
     @PostMapping(value = { "/test-connection" })
     public ResponseEntity<ApiResponse<ConnectionTestResult>> testConnectionDirect(
             @Valid @RequestBody ConnectionTestRequest request) {
-        log.info("直接测试连接: providerType={}", (Object) request.getProviderType());
+        log.info("直接测试连接: providerType={}", request.getProviderType());
         ConnectionTestResult result = this.modelProviderService.testConnectionDirect(request);
         return ResponseEntity.ok(ApiResponse.success(result));
     }

@@ -56,21 +56,21 @@ public class ModelProviderService {
         try {
             provider.setApiKeyEncrypted(AesEncryptUtil.encrypt(request.getApiKey()));
         } catch (Exception e) {
-            log.error("API Key 加密失败", (Throwable) e);
+            log.error("API Key 加密失败", e);
             throw new BizException(ErrorCode.API_KEY_ENCRYPTION_ERROR);
         }
-        provider.setBaseUrl(StringUtils.hasText((String) request.getBaseUrl()) ? request.getBaseUrl()
+        provider.setBaseUrl(StringUtils.hasText(request.getBaseUrl()) ? request.getBaseUrl()
                 : providerType.getDefaultBaseUrl());
         provider.setCustomHeaders(request.getCustomHeaders());
         provider.setStatus("active");
         provider.setCreatedBy(UserContext.getUserId());
         this.modelProviderMapper.insert(provider);
-        log.info("模型供应商创建成功: {}", (Object) provider.getId());
+        log.info("模型供应商创建成功: {}", provider.getId());
         return this.convertToResponse(provider);
     }
 
     public ProviderResponse getProviderById(String id) {
-        log.info("查询模型供应商详情: {}", (Object) id);
+        log.info("查询模型供应商详情: {}", id);
         ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
@@ -100,41 +100,41 @@ public class ModelProviderService {
 
     @Transactional(rollbackFor = { Exception.class })
     public ProviderResponse updateProvider(String id, ProviderUpdateRequest request) {
-        log.info("更新模型供应商: {}", (Object) id);
-        ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
+        log.info("更新模型供应商: {}", id);
+        ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById(id);
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
         }
         this.checkDataAccess(provider);
-        if (StringUtils.hasText((String) request.getName())) {
+        if (StringUtils.hasText(request.getName())) {
             provider.setName(request.getName());
         }
-        if (StringUtils.hasText((String) request.getApiKey())) {
+        if (StringUtils.hasText(request.getApiKey())) {
             try {
                 provider.setApiKeyEncrypted(AesEncryptUtil.encrypt(request.getApiKey()));
             } catch (Exception e) {
-                log.error("API Key 加密失败", (Throwable) e);
+                log.error("API Key 加密失败", e);
                 throw new BizException(ErrorCode.API_KEY_ENCRYPTION_ERROR);
             }
         }
-        if (StringUtils.hasText((String) request.getBaseUrl())) {
+        if (StringUtils.hasText(request.getBaseUrl())) {
             provider.setBaseUrl(request.getBaseUrl());
         }
         if (request.getCustomHeaders() != null) {
             provider.setCustomHeaders(request.getCustomHeaders());
         }
-        if (StringUtils.hasText((String) request.getStatus())) {
+        if (StringUtils.hasText(request.getStatus())) {
             provider.setStatus(request.getStatus());
         }
         this.modelProviderMapper.updateById(provider);
-        log.info("模型供应商更新成功: {}", (Object) id);
+        log.info("模型供应商更新成功: {}", id);
         return this.convertToResponse(provider);
     }
 
     @Transactional(rollbackFor = { Exception.class })
     public void deleteProvider(String id) {
-        log.info("删除模型供应商: {}", (Object) id);
-        ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
+        log.info("删除模型供应商: {}", id);
+        ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById(id);
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
         }
@@ -143,14 +143,14 @@ public class ModelProviderService {
         if (configCount > 0L) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_IN_USE);
         }
-        this.modelProviderMapper.deleteById((Serializable) ((Object) id));
-        log.info("模型供应商删除成功: {}", (Object) id);
+        this.modelProviderMapper.deleteById(id);
+        log.info("模型供应商删除成功: {}", id);
     }
 
-    public ConnectionTestResult testConnection(String id) {
+    public ConnectionTestResult testConnection(String id, String modelName) {
         String apiKey;
-        log.info("测试模型供应商连接: {}", (Object) id);
-        ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
+        log.info("测试模型供应商连接: id={}, modelName={}", id, modelName);
+        ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById(id);
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
         }
@@ -164,7 +164,7 @@ public class ModelProviderService {
         ProviderType providerType = ProviderType.fromCode(provider.getProviderType());
         String baseUrl = StringUtils.hasText((String) provider.getBaseUrl()) ? provider.getBaseUrl()
                 : providerType.getDefaultBaseUrl();
-        return this.doTestConnection(providerType, baseUrl, apiKey, null);
+        return this.doTestConnection(providerType, baseUrl, apiKey, modelName);
     }
 
     public ConnectionTestResult testConnectionDirect(ConnectionTestRequest request) {

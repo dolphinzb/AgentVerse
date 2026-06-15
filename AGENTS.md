@@ -14,6 +14,7 @@
 ### 1.2 Git 规则
 - **分支**：`feature/{变更名}` / `fix/{问题}`
 - **提交**：必须使用 Conventional Commits（见第 2 节）
+- **禁止**： 在 `main/master` 分支上进行开发；
 - **禁止**：`push --force` 到 main/master；直接提交到 main/master
 
 ### 1.3 前端规范
