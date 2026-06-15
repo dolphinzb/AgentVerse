@@ -142,7 +142,8 @@ async function handleTestConnection() {
     const res = await modelApi.testConnectionDirect({
       providerType: form.value.providerType,
       apiKey: form.value.apiKey,
-      baseUrl: form.value.baseUrl || undefined,
+      baseUrl: form.value.baseUrl,
+      modelName: form.value.modelName,
     })
     const result = res.data
     if (result.success) {

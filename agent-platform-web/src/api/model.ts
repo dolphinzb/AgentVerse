@@ -68,6 +68,7 @@ export interface ConnectionTestRequest {
   providerType: string
   apiKey: string
   baseUrl?: string
+  modelName?: string
 }
 
 /** 连接测试结果 */
