@@ -174,7 +174,8 @@ watch(() => currentSession.value?.messages?.length, () => scrollToBottom())
 watch(() => currentSession.value?.messages, () => scrollToBottom(), { deep: true })
 
 onMounted(() => {
-  agentStore.fetchAgents(1, 100)
+  // 对话页只能选已发布（active）的 Agent，过滤掉草稿/归档
+  agentStore.fetchAgents(1, 100, 'active')
   // If navigated with agentId query param, auto-create session
   const agentId = route.query.agentId as string
   if (agentId) {
