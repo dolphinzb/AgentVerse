@@ -70,7 +70,16 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       log('about to fetch...')
-      const response = await fetch(`/api/v2/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`, { signal })
+      // 原生 fetch 不会经过 request.ts 的 axios 拦截器，需要手动塞 Bearer 头
+      const token = localStorage.getItem('agentverse_token')
+      const headers: Record<string, string> = { Accept: 'text/event-stream' }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
+      const response = await fetch(
+        `/api/v2/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`,
+        { signal, headers },
+      )
       log('fetch completed, response:', response.status, response.statusText)
       log('response.body:', response.body)
 
