@@ -12,6 +12,8 @@ public class ConnectionTestRequest {
     @NotBlank(message="API Key \u4e0d\u80fd\u4e3a\u7a7a")
     private @NotBlank(message="API Key \u4e0d\u80fd\u4e3a\u7a7a") String apiKey;
     private String baseUrl;
+    /** 模型名称，用于连接测试时验证具体模型可用性 */
+    private String modelName;
 
     @Generated
     public ConnectionTestRequest() {
@@ -33,6 +35,11 @@ public class ConnectionTestRequest {
     }
 
     @Generated
+    public String getModelName() {
+        return this.modelName;
+    }
+
+    @Generated
     public void setProviderType(String providerType) {
         this.providerType = providerType;
     }
@@ -45,6 +52,11 @@ public class ConnectionTestRequest {
     @Generated
     public void setBaseUrl(String baseUrl) {
         this.baseUrl = baseUrl;
+    }
+
+    @Generated
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
     }
 
     @Generated

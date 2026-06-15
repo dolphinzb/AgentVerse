@@ -142,12 +142,17 @@ async function handleTestConnection() {
     ElMessage.warning('请先输入 API Key')
     return
   }
+  if (!form.value.modelName) {
+    ElMessage.warning('请先选择或输入模型名称')
+    return
+  }
   testing.value = true
   try {
     const res = await modelApi.testConnectionDirect({
       providerType: props.preset!.providerType,
       apiKey: form.value.apiKey,
       baseUrl: form.value.baseUrl || undefined,
+      modelName: form.value.modelName,
     })
     const result = res.data
     if (result.success) {

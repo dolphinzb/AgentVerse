@@ -4,6 +4,7 @@ export interface AgentCreateRequest {
   name: string
   description?: string
   sysPrompt?: string
+  modelConfigId?: string
   maxIterations?: number
 }
 
@@ -11,6 +12,7 @@ export interface AgentUpdateRequest {
   name?: string
   description?: string
   sysPrompt?: string
+  modelConfigId?: string
   maxIterations?: number
 }
 
@@ -19,6 +21,7 @@ export interface AgentResponse {
   name: string
   description: string
   sysPrompt: string
+  modelConfigId: string
   maxIterations: number
   workspaceMode: string
   status: string

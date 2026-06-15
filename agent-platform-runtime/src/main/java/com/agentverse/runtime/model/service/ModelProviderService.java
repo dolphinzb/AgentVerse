@@ -48,7 +48,7 @@ public class ModelProviderService {
 
     @Transactional(rollbackFor = { Exception.class })
     public ProviderResponse createProvider(ProviderCreateRequest request) {
-        log.info("\u521b\u5efa\u6a21\u578b\u4f9b\u5e94\u5546: {}", (Object) request.getName());
+        log.info("创建模型供应商: {}", (Object) request.getName());
         ProviderType providerType = ProviderType.fromCode(request.getProviderType());
         ModelProvider provider = new ModelProvider();
         provider.setName(request.getName());
@@ -56,7 +56,7 @@ public class ModelProviderService {
         try {
             provider.setApiKeyEncrypted(AesEncryptUtil.encrypt(request.getApiKey()));
         } catch (Exception e) {
-            log.error("API Key \u52a0\u5bc6\u5931\u8d25", (Throwable) e);
+            log.error("API Key 加密失败", (Throwable) e);
             throw new BizException(ErrorCode.API_KEY_ENCRYPTION_ERROR);
         }
         provider.setBaseUrl(StringUtils.hasText((String) request.getBaseUrl()) ? request.getBaseUrl()
@@ -65,12 +65,12 @@ public class ModelProviderService {
         provider.setStatus("active");
         provider.setCreatedBy(UserContext.getUserId());
         this.modelProviderMapper.insert(provider);
-        log.info("\u6a21\u578b\u4f9b\u5e94\u5546\u521b\u5efa\u6210\u529f: {}", (Object) provider.getId());
+        log.info("模型供应商创建成功: {}", (Object) provider.getId());
         return this.convertToResponse(provider);
     }
 
     public ProviderResponse getProviderById(String id) {
-        log.info("\u67e5\u8be2\u6a21\u578b\u4f9b\u5e94\u5546: {}", (Object) id);
+        log.info("查询模型供应商详情: {}", (Object) id);
         ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
@@ -81,7 +81,7 @@ public class ModelProviderService {
 
     public Page<ProviderResponse> listProviders(Integer page, Integer pageSize, String status) {
         Long userId;
-        log.info("\u67e5\u8be2\u6a21\u578b\u4f9b\u5e94\u5546\u5217\u8868: page={}, pageSize={}, status={}", page,
+        log.info("查询模型供应商列表: page={}, pageSize={}, status={}", page,
                 pageSize, status);
         Page<ModelProvider> pageParam = new Page<>(page.longValue(), pageSize.longValue());
         LambdaQueryWrapper<ModelProvider> queryWrapper = new LambdaQueryWrapper<>();
@@ -100,7 +100,7 @@ public class ModelProviderService {
 
     @Transactional(rollbackFor = { Exception.class })
     public ProviderResponse updateProvider(String id, ProviderUpdateRequest request) {
-        log.info("\u66f4\u65b0\u6a21\u578b\u4f9b\u5e94\u5546: {}", (Object) id);
+        log.info("更新模型供应商: {}", (Object) id);
         ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
@@ -113,7 +113,7 @@ public class ModelProviderService {
             try {
                 provider.setApiKeyEncrypted(AesEncryptUtil.encrypt(request.getApiKey()));
             } catch (Exception e) {
-                log.error("API Key \u52a0\u5bc6\u5931\u8d25", (Throwable) e);
+                log.error("API Key 加密失败", (Throwable) e);
                 throw new BizException(ErrorCode.API_KEY_ENCRYPTION_ERROR);
             }
         }
@@ -127,13 +127,13 @@ public class ModelProviderService {
             provider.setStatus(request.getStatus());
         }
         this.modelProviderMapper.updateById(provider);
-        log.info("\u6a21\u578b\u4f9b\u5e94\u5546\u66f4\u65b0\u6210\u529f: {}", (Object) id);
+        log.info("模型供应商更新成功: {}", (Object) id);
         return this.convertToResponse(provider);
     }
 
     @Transactional(rollbackFor = { Exception.class })
     public void deleteProvider(String id) {
-        log.info("\u5220\u9664\u6a21\u578b\u4f9b\u5e94\u5546: {}", (Object) id);
+        log.info("删除模型供应商: {}", (Object) id);
         ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
@@ -144,12 +144,12 @@ public class ModelProviderService {
             throw new BizException(ErrorCode.MODEL_PROVIDER_IN_USE);
         }
         this.modelProviderMapper.deleteById((Serializable) ((Object) id));
-        log.info("\u6a21\u578b\u4f9b\u5e94\u5546\u5220\u9664\u6210\u529f: {}", (Object) id);
+        log.info("模型供应商删除成功: {}", (Object) id);
     }
 
     public ConnectionTestResult testConnection(String id) {
         String apiKey;
-        log.info("\u6d4b\u8bd5\u6a21\u578b\u4f9b\u5e94\u5546\u8fde\u63a5: {}", (Object) id);
+        log.info("测试模型供应商连接: {}", (Object) id);
         ModelProvider provider = (ModelProvider) this.modelProviderMapper.selectById((Serializable) ((Object) id));
         if (provider == null) {
             throw new BizException(ErrorCode.MODEL_PROVIDER_NOT_FOUND);
@@ -158,32 +158,34 @@ public class ModelProviderService {
         try {
             apiKey = AesEncryptUtil.decrypt(provider.getApiKeyEncrypted());
         } catch (Exception e) {
-            log.error("API Key \u89e3\u5bc6\u5931\u8d25", (Throwable) e);
-            return ConnectionTestResult.fail("API Key \u89e3\u5bc6\u5931\u8d25");
+            log.error("API Key 解密失败", (Throwable) e);
+            return ConnectionTestResult.fail("API Key 解密失败");
         }
         ProviderType providerType = ProviderType.fromCode(provider.getProviderType());
         String baseUrl = StringUtils.hasText((String) provider.getBaseUrl()) ? provider.getBaseUrl()
                 : providerType.getDefaultBaseUrl();
-        return this.doTestConnection(providerType, baseUrl, apiKey);
+        return this.doTestConnection(providerType, baseUrl, apiKey, null);
     }
 
     public ConnectionTestResult testConnectionDirect(ConnectionTestRequest request) {
-        log.info("\u76f4\u63a5\u6d4b\u8bd5\u8fde\u63a5: providerType={}", (Object) request.getProviderType());
+        log.info("直接测试连接: providerType={}, modelName={}", (Object) request.getProviderType(),
+                (Object) request.getModelName());
         ProviderType providerType = ProviderType.fromCode(request.getProviderType());
         String baseUrl = StringUtils.hasText((String) request.getBaseUrl()) ? request.getBaseUrl()
                 : providerType.getDefaultBaseUrl();
-        return this.doTestConnection(providerType, baseUrl, request.getApiKey());
+        return this.doTestConnection(providerType, baseUrl, request.getApiKey(), request.getModelName());
     }
 
-    private ConnectionTestResult doTestConnection(ProviderType providerType, String baseUrl, String apiKey) {
+    private ConnectionTestResult doTestConnection(ProviderType providerType, String baseUrl, String apiKey,
+            String modelName) {
         try {
             return switch (providerType) {
-                case DASHSCOPE -> this.testDashScopeConnection(baseUrl, apiKey);
-                case OPENAI, DEEPSEEK -> this.testOpenAICompatibleConnection(baseUrl, apiKey);
+                case DASHSCOPE -> this.testDashScopeConnection(baseUrl, apiKey, modelName);
+                case OPENAI, DEEPSEEK -> this.testOpenAICompatibleConnection(baseUrl, apiKey, modelName);
             };
         } catch (Exception e) {
-            log.error("\u8fde\u63a5\u6d4b\u8bd5\u5f02\u5e38: providerType={}, error={}", providerType, e.getMessage());
-            return ConnectionTestResult.fail("\u8fde\u63a5\u6d4b\u8bd5\u5931\u8d25: " + e.getMessage());
+            log.error("连接测试异常: providerType={}, error={}", providerType, e.getMessage());
+            return ConnectionTestResult.fail("连接测试失败: " + e.getMessage());
         }
     }
 
@@ -225,38 +227,46 @@ public class ModelProviderService {
         return this.modelProviderMapper.countModelConfigsByProviderId(providerId);
     }
 
-    private ConnectionTestResult testDashScopeConnection(String baseUrl, String apiKey) {
+    private ConnectionTestResult testDashScopeConnection(String baseUrl, String apiKey, String modelName) {
         try {
             String url = baseUrl + "/chat/completions";
-            String requestBody = "{\n    \"model\": \"qwen-turbo\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}],\n    \"max_tokens\": 1\n}\n";
+            // 使用传入的模型名称，若未指定则使用默认值 qwen-turbo
+            String model = StringUtils.hasText(modelName) ? modelName : "qwen-turbo";
+            String requestBody = "{\n    \"model\": \"" + model
+                    + "\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}],\n    \"max_tokens\": 1\n}\n";
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
                     .header("Content-Type", "application/json").header("Authorization", "Bearer " + apiKey)
                     .timeout(Duration.ofSeconds(15L)).POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
             HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10L)).build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return ConnectionTestResult.ok("DashScope \u8fde\u63a5\u6210\u529f");
+                return ConnectionTestResult.ok("DashScope 连接成功");
             }
-            return ConnectionTestResult.fail("DashScope \u8fd4\u56de\u72b6\u6001\u7801: " + response.statusCode());
+            return ConnectionTestResult.fail("DashScope 返回状态码: " + response.statusCode());
         } catch (Exception e) {
-            return ConnectionTestResult.fail("DashScope \u8fde\u63a5\u5931\u8d25: " + e.getMessage());
+            return ConnectionTestResult.fail("DashScope 连接失败: " + e.getMessage());
         }
     }
 
-    private ConnectionTestResult testOpenAICompatibleConnection(String baseUrl, String apiKey) {
+    private ConnectionTestResult testOpenAICompatibleConnection(String baseUrl, String apiKey, String modelName) {
         try {
-            String url = baseUrl + "/models";
+            // 使用 chat/completions 接口测试，与 DashScope 保持一致
+            String url = baseUrl + "/chat/completions";
+            // 使用传入的模型名称，若未指定则使用默认值 gpt-3.5-turbo
+            String model = StringUtils.hasText(modelName) ? modelName : "gpt-3.5-turbo";
+            String requestBody = "{\n    \"model\": \"" + model
+                    + "\",\n    \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}],\n    \"max_tokens\": 1\n}\n";
             HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
-                    .header("Authorization", "Bearer " + apiKey).timeout(Duration.ofSeconds(15L)).GET().build();
+                    .header("Content-Type", "application/json").header("Authorization", "Bearer " + apiKey)
+                    .timeout(Duration.ofSeconds(15L)).POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
             HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10L)).build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return ConnectionTestResult
-                        .ok("\u8fde\u63a5\u6210\u529f\uff0c\u6a21\u578b\u5217\u8868\u83b7\u53d6\u6b63\u5e38");
+                return ConnectionTestResult.ok("连接成功");
             }
-            return ConnectionTestResult.fail("API \u8fd4\u56de\u72b6\u6001\u7801: " + response.statusCode());
+            return ConnectionTestResult.fail("API 返回状态码: " + response.statusCode());
         } catch (Exception e) {
-            return ConnectionTestResult.fail("\u8fde\u63a5\u5931\u8d25: " + e.getMessage());
+            return ConnectionTestResult.fail("连接失败: " + e.getMessage());
         }
     }
 

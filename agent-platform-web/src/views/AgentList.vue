@@ -56,6 +56,16 @@
         <el-form-item label="系统提示词">
           <el-input v-model="form.sysPrompt" type="textarea" :rows="4" placeholder="请输入系统提示词" />
         </el-form-item>
+        <el-form-item label="模型配置" required>
+          <el-select v-model="form.modelConfigId" placeholder="请选择模型配置" style="width: 100%" filterable>
+            <el-option
+              v-for="model in modelList"
+              :key="model.id"
+              :label="`${model.displayName || model.modelName} (${model.providerName})`"
+              :value="model.id"
+            />
+          </el-select>
+        </el-form-item>
         <el-form-item label="最大迭代次数">
           <el-input-number v-model="form.maxIterations" :min="1" :max="100" />
         </el-form-item>
@@ -71,6 +81,7 @@
 <script setup lang="ts">
 import type { AgentResponse } from '@/api/agent'
 import { useAgentStore } from '@/stores/agent'
+import { modelApi, type ModelConfig } from '@/api/model'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -86,13 +97,27 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const editingId = ref('')
 const submitting = ref(false)
+const modelList = ref<ModelConfig[]>([])
 
 const form = ref({
   name: '',
   description: '',
   sysPrompt: '',
+  modelConfigId: '',
   maxIterations: 10,
 })
+
+/**
+ * 加载模型配置列表（用于下拉选择）
+ */
+async function loadModelList() {
+  try {
+    const res = await modelApi.getModelConfigs({ page: 1, pageSize: 100 })
+    modelList.value = res.data.records || []
+  } catch (e) {
+    console.error('加载模型列表失败', e)
+  }
+}
 
 function fetchData() {
   agentStore.fetchAgents(page.value, pageSize.value, statusFilter.value || undefined)
@@ -127,6 +152,7 @@ function openEditDialog(agent: AgentResponse) {
     name: agent.name,
     description: agent.description || '',
     sysPrompt: agent.sysPrompt || '',
+    modelConfigId: agent.modelConfigId || '',
     maxIterations: agent.maxIterations,
   }
   dialogVisible.value = true
@@ -135,6 +161,10 @@ function openEditDialog(agent: AgentResponse) {
 async function handleSubmit() {
   if (!form.value.name) {
     ElMessage.warning('请输入 Agent 名称')
+    return
+  }
+  if (!form.value.modelConfigId) {
+    ElMessage.warning('请选择模型配置')
     return
   }
   submitting.value = true
@@ -162,12 +192,15 @@ async function handleDelete(agent: AgentResponse) {
 }
 
 function resetForm() {
-  form.value = { name: '', description: '', sysPrompt: '', maxIterations: 10 }
+  form.value = { name: '', description: '', sysPrompt: '', modelConfigId: '', maxIterations: 10 }
   isEdit.value = false
   editingId.value = ''
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchData()
+  loadModelList()
+})
 
 // Watch showCreateDialog to also open dialogVisible
 import { watch } from 'vue'
