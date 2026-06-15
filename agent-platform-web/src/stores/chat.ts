@@ -1,4 +1,4 @@
-import { chatApi, type MessageResponse, type SessionResponse } from '@/api/chat'
+import { chatApi, type MessageResponse } from '@/api/chat'
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
@@ -39,59 +39,29 @@ export const useChatStore = defineStore('chat', () => {
     return session
   }
 
-  async function sendMessage(sessionId: string, content: string) {
-    const res = await chatApi.sendMessage(sessionId, { content })
-    const session = sessions.value.find(s => s.sessionId === sessionId)
-    if (session) {
-      session.messages.push({ role: 'user', content, timestamp: new Date().toISOString() })
-      session.messages.push(res.data)
-    }
-    return res.data
-  }
   /**
-   * 从后端拉取当前用户的会话列表。用于页面刷新 / 首次进入对话页时
-   * 还原左侧会话栏，避免 Pinia store 状态清空后用户看不到历史会话。
+   * SSE 流式消息：与后端 /v2/chat/sessions/{id}/stream 建立长连接，
+   * 把数据块累积到当前会话中新增的占位 assistant 消息上
    */
-  async function fetchSessions() {
-    const res = await chatApi.listSessions()
-    sessions.value = res.data.map((s: SessionResponse) => ({
-      sessionId: s.sessionId,
-      agentId: s.agentId,
-      agentName: s.agentName || 'Agent',
-      createdAt: s.createdAt,
-      messages: [],
-    }))
-    if (sessions.value.length > 0 && !currentSessionId.value) {
-      const first = sessions.value[0]
-      currentSessionId.value = first.sessionId
-      try {
-        const hist = await chatApi.getSessionHistory(first.sessionId)
-        first.messages = hist.data
-      } catch (e) {
-        console.warn('Failed to load history for session', first.sessionId, e)
-      }
-    }
-  }
-
-  async function streamMessage(sessionId: string, content: string): Promise<void> {
-    const log = (msg: string, ...args: any[]) => console.log(`[${new Date().toISOString()}] ${msg}`, ...args)
-
-    log('streamMessage started, sessionId:', sessionId)
+  async function streamMessage(sessionId: string, content: string) {
     const session = sessions.value.find(s => s.sessionId === sessionId)
     if (!session) {
-      log('session not found, returning')
+      console.warn('[stream] session not found:', sessionId)
       return
     }
-
-    session.messages.push({ role: 'user', content, timestamp: new Date().toISOString() } as MessageResponse)
-    const assistantMsg = reactive<MessageResponse>({ role: 'assistant', content: '', timestamp: new Date().toISOString() })
-    session.messages.push(assistantMsg as MessageResponse)
+    // 占位 assistant 消息：边收边往 content 上追加，reactive 保证视图自动更新
+    const assistantMsg: ReactiveMessage = reactive({
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    })
+    session.messages.push(assistantMsg)
     streaming.value = true
-    log('streaming set to true')
 
+    // 简单日志封装：调试 SSE 用
+    const log = (...args: any[]) => console.log('[stream]', ...args)
     const controller = new AbortController()
     const signal = controller.signal
-
     try {
       log('about to fetch...')
       // 原生 fetch 不会经过 request.ts 的 axios 拦截器，需要手动塞 Bearer 头
@@ -186,6 +156,47 @@ export const useChatStore = defineStore('chat', () => {
   async function interruptSession(sessionId: string) {
     await chatApi.interruptSession(sessionId)
     streaming.value = false
+  }
+
+  /**
+   * 非流式发送：直接走 REST 接口，返回完整 assistant 回复后插入到当前会话
+   * 留作 streamMessage 不可用时的兜底（ChatView.handleSend 在 catch 路径会调用）
+   */
+  async function sendMessage(sessionId: string, content: string) {
+    const session = sessions.value.find(s => s.sessionId === sessionId)
+    if (!session) return
+    // 记录用户消息
+    session.messages.push({
+      role: 'user',
+      content,
+      timestamp: new Date().toISOString(),
+    } as MessageResponse)
+    streaming.value = true
+    try {
+      const res = await chatApi.sendMessage(sessionId, { content })
+      session.messages.push(res.data)
+    } finally {
+      streaming.value = false
+    }
+  }
+
+  /**
+   * F5 / 首次进入对话页时调用：从后端还原当前用户的会话列表，
+   * 自动选中第一个会话并加载历史
+   */
+  async function fetchSessions() {
+    const res = await chatApi.listSessions()
+    sessions.value = res.data.map(s => ({
+      sessionId: s.sessionId,
+      agentId: s.agentId,
+      agentName: s.agentName,
+      createdAt: s.createdAt,
+      messages: [],
+    }))
+    if (sessions.value.length > 0 && !currentSessionId.value) {
+      currentSessionId.value = sessions.value[0].sessionId
+      await fetchSessionHistory(sessions.value[0].sessionId)
+    }
   }
 
   return {

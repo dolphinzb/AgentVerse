@@ -9,13 +9,13 @@
           <el-icon><Monitor /></el-icon>
           <template #title>Agent 管理</template>
         </el-menu-item>
-        <el-menu-item index="/models">
-          <el-icon><Cpu /></el-icon>
-          <template #title>模型管理</template>
-        </el-menu-item>
         <el-menu-item index="/chat">
           <el-icon><ChatDotRound /></el-icon>
           <template #title>对话</template>
+        </el-menu-item>
+        <el-menu-item index="/models">
+          <el-icon><Cpu /></el-icon>
+          <template #title>模型管理</template>
         </el-menu-item>
         <el-menu-item v-if="userStore.isAdmin" index="/admin/audit-logs">
           <el-icon><Document /></el-icon>

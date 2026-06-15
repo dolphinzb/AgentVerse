@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>agent-platform-runtime</artifactId>
-    <packaging>jar</packaging>
+    <packaging>jar</packaging> 
 
     <name>AgentVerse Platform Runtime</name>
     <description>Runtime module with Spring Boot application and agent execution engine</description>

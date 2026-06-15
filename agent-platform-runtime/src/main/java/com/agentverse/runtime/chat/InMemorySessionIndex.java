@@ -41,7 +41,10 @@ implements SessionIndex {
 
     @Override
     public List<SessionMeta> listByAgent(String agentId, String userId) {
-        return this.store.values().stream().filter(m -> m.agentId().equals(agentId)).filter(m -> userId == null || m.userId().equals(userId)).collect(Collectors.toList());
+        return this.store.values().stream()
+                .filter(m -> agentId == null || m.agentId().equals(agentId))
+                .filter(m -> userId == null || m.userId().equals(userId))
+                .collect(Collectors.toList());
     }
 
     @Override

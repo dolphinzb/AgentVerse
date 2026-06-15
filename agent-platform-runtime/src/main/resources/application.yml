@@ -25,20 +25,18 @@ spring:
     serialization:
       write-dates-as-timestamps: false
 
-  # Redis（可选）：仅当启用 Redis 后端时（agent.interrupt.backend=redis / agent.session.backend=redis）
-  # 取消下面注释并设置 REDIS_HOST / REDIS_PORT 环境变量即可启用。
-  # 未启用时 Spring Boot 不会创建 StringRedisTemplate，相关 Bean 也不会加载。
-  # data:
-  #   redis:
-  #     host: ${REDIS_HOST:127.0.0.1}
-  #     port: ${REDIS_PORT:6379}
-  #     password: ${REDIS_PASSWORD:}
-  #     timeout: 2s
-  #     lettuce:
-  #       pool:
-  #         max-active: 8
-  #         max-idle: 8
-  #         min-idle: 1
+  # Redis（StringRedisTemplate 用于 InterruptBus Pub/Sub；未配置时降级为 LocalInterruptBus）
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 1
 
 # MyBatis-Plus 配置
 mybatis-plus:

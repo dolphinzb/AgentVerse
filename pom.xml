@@ -81,13 +81,11 @@
                 <artifactId>agentscope-harness</artifactId>
                 <version>${agentscope.version}</version>
             </dependency>
-            <!-- Session Redis 后端 (io.agentscope.core.session.redis.RedisSession 在此模块) -->
             <dependency>
                 <groupId>io.agentscope</groupId>
                 <artifactId>agentscope-extensions-session-redis</artifactId>
                 <version>${agentscope.version}</version>
             </dependency>
-
             <!-- Hutool -->
             <dependency>
                 <groupId>cn.hutool</groupId>

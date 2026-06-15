@@ -77,7 +77,6 @@ agent-platform-runtime/.agentscope/
 agent-platform-web/node_modules/
 agent-platform-web/dist/
 agent-platform-web/*.lock
-agent-platform-web/tsconfig.tsbuildinfo
 agent-platform-web/package-lock.json
 agent-platform-web/.DS_Store
 

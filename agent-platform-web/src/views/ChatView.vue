@@ -81,12 +81,15 @@
         <el-form-item label="选择 Agent">
           <el-select v-model="selectedAgentId" placeholder="请选择 Agent" style="width: 100%">
             <el-option
-              v-for="agent in agentStore.agents"
+              v-for="agent in publishedAgents"
               :key="agent.id"
               :label="agent.name"
               :value="agent.id"
             />
           </el-select>
+          <div v-if="publishedAgents.length === 0" style="margin-top: 8px; font-size: 12px; color: #909399">
+            暂无可用的 Agent，请先发布一个 Agent
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -101,7 +104,7 @@
 import { useAgentStore } from '@/stores/agent'
 import { useChatStore } from '@/stores/chat'
 import { ChatDotRound } from '@element-plus/icons-vue'
-import { ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
@@ -117,6 +120,9 @@ const messageContainer = ref<HTMLElement | null>(null)
 
 const currentSession = computed(() => chatStore.getCurrentSession())
 
+// 仅展示已发布（status='active'）的 Agent，创建对话时只允许选择这些
+const publishedAgents = computed(() => agentStore.agents.filter(a => a.status === 'active'))
+
 function selectSession(sessionId: string) {
   chatStore.currentSessionId = sessionId
   chatStore.fetchSessionHistory(sessionId)
@@ -124,8 +130,13 @@ function selectSession(sessionId: string) {
 
 async function handleCreateSession() {
   if (!selectedAgentId.value) return
-  const agent = agentStore.agents.find(a => a.id === selectedAgentId.value)
-  await chatStore.createSession(selectedAgentId.value, agent?.name || 'Agent')
+  // 兜底：防止 race condition 或 store 中残留非 active 状态的 agent
+  const agent = publishedAgents.value.find(a => a.id === selectedAgentId.value)
+  if (!agent) {
+    ElMessage.error('该 Agent 尚未发布，无法创建对话')
+    return
+  }
+  await chatStore.createSession(selectedAgentId.value, agent.name)
   showNewSessionDialog.value = false
   selectedAgentId.value = ''
 }
@@ -173,16 +184,25 @@ watch(() => currentSession.value?.messages?.length, () => scrollToBottom())
 // Auto-scroll when streaming content updates
 watch(() => currentSession.value?.messages, () => scrollToBottom(), { deep: true })
 
-onMounted(() => {
-  // 对话页只能选已发布（active）的 Agent，过滤掉草稿/归档
-  agentStore.fetchAgents(1, 100, 'active')
-  // 加载当前用户的会话列表，刷新页面后从后端还原左侧会话栏
-  chatStore.fetchSessions()
-  // If navigated with agentId query param, auto-create session
+onMounted(async () => {
+  // 只拉取已发布（active）的 Agent，避免用户在新建会话对话框中选到草稿/归档
+  await agentStore.fetchAgents(1, 100, 'active')
+  // 还原左侧会话栏：F5 刷新后 Pinia store 是空的，需要从后端重新拉取
+  try {
+    await chatStore.fetchSessions()
+  } catch (e) {
+    // 后端可能因 token 失效等抛错，不阻塞页面其它逻辑
+    console.warn('fetchSessions failed:', e)
+  }
+  // If navigated with agentId query param, auto-create session (仅当目标 Agent 处于发布状态)
   const agentId = route.query.agentId as string
   if (agentId) {
-    selectedAgentId.value = agentId
-    handleCreateSession()
+    if (publishedAgents.value.some(a => a.id === agentId)) {
+      selectedAgentId.value = agentId
+      handleCreateSession()
+    } else {
+      ElMessage.warning('该 Agent 尚未发布，无法创建对话')
+    }
   }
 })
 </script>
