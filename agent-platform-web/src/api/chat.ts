@@ -22,18 +22,18 @@ export interface MessageResponse {
 
 export const chatApi = {
   createSession(data: SessionCreateRequest) {
-    return request.post<any, { data: SessionResponse }>('/v1/chat/sessions', data)
+    return request.post<any, { data: SessionResponse }>('/v2/chat/sessions', data)
   },
   sendMessage(sessionId: string, data: MessageRequest) {
-    return request.post<any, { data: MessageResponse }>(`/v1/chat/sessions/${sessionId}/messages`, data)
+    return request.post<any, { data: MessageResponse }>(`/v2/chat/sessions/${sessionId}/messages`, data)
   },
   getSessionHistory(sessionId: string) {
-    return request.get<any, { data: MessageResponse[] }>(`/v1/chat/sessions/${sessionId}/messages`)
+    return request.get<any, { data: MessageResponse[] }>(`/v2/chat/sessions/${sessionId}/messages`)
   },
   deleteSession(sessionId: string) {
-    return request.delete(`/v1/chat/sessions/${sessionId}`)
+    return request.delete(`/v2/chat/sessions/${sessionId}`)
   },
   interruptSession(sessionId: string) {
-    return request.post<any, { data: boolean }>(`/v1/chat/sessions/${sessionId}/interrupt`)
+    return request.post<any, { data: boolean }>(`/v2/chat/sessions/${sessionId}/interrupt`)
   },
 }

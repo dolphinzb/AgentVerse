@@ -70,7 +70,7 @@ export const useChatStore = defineStore('chat', () => {
 
     try {
       log('about to fetch...')
-      const response = await fetch(`/api/v1/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`, { signal })
+      const response = await fetch(`/api/v2/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`, { signal })
       log('fetch completed, response:', response.status, response.statusText)
       log('response.body:', response.body)
 
