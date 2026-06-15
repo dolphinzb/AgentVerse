@@ -61,7 +61,13 @@ public class HarnessAgentEngine {
         Msg userMsg = Msg.builder().textContent(userMessage).build();
         this.appendMemory(sessionId, userMsg);
         this.interruptBus.register(sessionId, agent);
-        return agent.stream(userMsg, context).filter(event -> event != null && event.getMessage() != null).map(this::extractContent).filter(content -> content != null && !content.isEmpty()).doOnComplete(() -> {
+        return agent.stream(userMsg, context)
+                .<String>handle((event, sink) -> {
+                    String text = this.extractContent(event);
+                    if (text != null && !text.isEmpty()) {
+                        sink.next(text);
+                    }
+                }).doOnComplete(() -> {
             this.interruptBus.unregister(sessionId);
             log.info("Stream completed: sessionId={}", (Object)sessionId);
         }).doOnError(e -> {
