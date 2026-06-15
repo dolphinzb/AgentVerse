@@ -1,0 +1,46 @@
+{
+  "change": "session-harness-native-refactor",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "DC22054DC41FFC80C921DDADF149883F1E3A9D27F1AC363DC28CDFD3F6CBF801",
+  "files": [
+    {
+      "path": "openspec/changes/session-harness-native-refactor/proposal.md",
+      "sha256": "007DE64DACA077BDDBBF7A7F1B5FD7F6A79CF31902FFBABD4549EACD4E839E4C"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/design.md",
+      "sha256": "DC22054DC41FFC80C921DDADF149883F1E3A9D27F1AC363DC28CDFD3F6CBF801"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/tasks.md",
+      "sha256": "12987D66E42AB7FB75405868F2148EA9991D64E97D572C88225390A390775BEA"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/specs/harness-native-session/spec.md",
+      "sha256": "04A56600124706008530DE5C244159E2BAD5B45BDCAEF56B1BBC0BC33E34A7F8"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/specs/distributed-interrupt/spec.md",
+      "sha256": "60365B3260E8F2973A36197B8686E14F89C915FB32B3520194EBE3A8CA97146A"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/specs/chat-service/spec.md",
+      "sha256": "52C57BE5C460D85F7B76A6059EA2CF01342FB25694169228B4E076B8DD896BB0"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/specs/session-persistence-dashboard/spec.md",
+      "sha256": "34BF14197EF7F64EFFC78B7E5BD2005999272D35588EDD409FF1EDEF0B362715"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/specs/loop-enhancements/spec.md",
+      "sha256": "98B79DA7F3E7CE0D2B8A8612AE3DDDBE44CC29920779A32107D6DFF50AA3310C"
+    },
+    {
+      "path": "openspec/changes/session-harness-native-refactor/specs/harness-agent-engine/spec.md",
+      "sha256": "E32406BE8DC3995494D9729736366EA104FFFF4B72EA34D0E2A0B5958D71135D"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "change": "phase-4-production-runtime",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "a1b2c3d4-handoff-placeholder",
+  "files": [
+    { "path": "openspec/changes/phase-4-production-runtime/proposal.md", "sha256": "1793a68b19eb8209f3f57c16bb166ff47e969be2" },
+    { "path": "openspec/changes/phase-4-production-runtime/design.md", "sha256": "de784d5bea5cb0933b262341fa39b2641ab162da" },
+    { "path": "openspec/changes/phase-4-production-runtime/tasks.md", "sha256": "7d661c6ccdbd1fc6c77e259b63f7d9ef64866404" }
+  ]
+}

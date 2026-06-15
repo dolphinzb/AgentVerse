@@ -80,5 +80,4 @@ agent-platform-web/*.lock
 agent-platform-web/package-lock.json
 agent-platform-web/.DS_Store
 
-openspec/
 workspace/

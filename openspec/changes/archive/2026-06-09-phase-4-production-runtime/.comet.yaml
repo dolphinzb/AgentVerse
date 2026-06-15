@@ -1,0 +1,17 @@
+workflow: full
+phase: archive
+design_doc: docs/superpowers/specs/2026-06-08-production-runtime-design.md
+plan: docs/superpowers/plans/2026-06-08-production-runtime.md
+base_ref: 2a47a290cebfb11abdd07071cd615272a6709f6a
+build_mode: subagent-driven-development
+build_pause: null
+isolation: branch
+verify_mode: full
+verify_result: pass
+verification_report: docs/superpowers/reports/2026-06-08-phase-4-production-runtime-verify.md
+branch_status: handled
+created_at: 2026-06-08
+verified_at: 2026-06-09
+archived: true
+handoff_context: openspec/changes/phase-4-production-runtime/.comet/handoff/design-context.json
+handoff_hash: a1b2c3d4-handoff-placeholder

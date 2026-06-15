@@ -4,10 +4,11 @@
 package com.agentverse.common.dto;
 
 import java.io.Serializable;
+
 import lombok.Generated;
 
 public class ApiResponse<T>
-implements Serializable {
+        implements Serializable {
     private Integer code;
     private String message;
     private T data;
@@ -25,7 +26,7 @@ implements Serializable {
     }
 
     public static <T> ApiResponse<T> success() {
-        return new ApiResponse<Object>(200, "success", null);
+        return new ApiResponse<>(200, "success", null);
     }
 
     public static <T> ApiResponse<T> success(T data) {
@@ -37,11 +38,11 @@ implements Serializable {
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<Object>(500, message, null);
+        return new ApiResponse<>(500, message, null);
     }
 
     public static <T> ApiResponse<T> error(Integer code, String message) {
-        return new ApiResponse<Object>(code, message, null);
+        return new ApiResponse<>(code, message, null);
     }
 
     public static <T> ApiResponse<T> error(Integer code, String message, T data) {
@@ -96,18 +97,18 @@ implements Serializable {
         if (!(o instanceof ApiResponse)) {
             return false;
         }
-        ApiResponse other = (ApiResponse)o;
+        ApiResponse other = (ApiResponse) o;
         if (!other.canEqual(this)) {
             return false;
         }
         Integer this$code = this.getCode();
         Integer other$code = other.getCode();
-        if (this$code == null ? other$code != null : !((Object)this$code).equals(other$code)) {
+        if (this$code == null ? other$code != null : !((Object) this$code).equals(other$code)) {
             return false;
         }
         Long this$timestamp = this.getTimestamp();
         Long other$timestamp = other.getTimestamp();
-        if (this$timestamp == null ? other$timestamp != null : !((Object)this$timestamp).equals(other$timestamp)) {
+        if (this$timestamp == null ? other$timestamp != null : !((Object) this$timestamp).equals(other$timestamp)) {
             return false;
         }
         String this$message = this.getMessage();
@@ -116,7 +117,8 @@ implements Serializable {
             return false;
         }
         T this$data = this.getData();
-        T other$data = other.getData();
+        @SuppressWarnings("unchecked")
+        T other$data = (T) other.getData();
         return !(this$data == null ? other$data != null : !this$data.equals(other$data));
     }
 
@@ -130,9 +132,9 @@ implements Serializable {
         int PRIME = 59;
         int result = 1;
         Integer $code = this.getCode();
-        result = result * 59 + ($code == null ? 43 : ((Object)$code).hashCode());
+        result = result * 59 + ($code == null ? 43 : ((Object) $code).hashCode());
         Long $timestamp = this.getTimestamp();
-        result = result * 59 + ($timestamp == null ? 43 : ((Object)$timestamp).hashCode());
+        result = result * 59 + ($timestamp == null ? 43 : ((Object) $timestamp).hashCode());
         String $message = this.getMessage();
         result = result * 59 + ($message == null ? 43 : $message.hashCode());
         T $data = this.getData();
@@ -142,7 +144,7 @@ implements Serializable {
 
     @Generated
     public String toString() {
-        return "ApiResponse(code=" + this.getCode() + ", message=" + this.getMessage() + ", data=" + String.valueOf(this.getData()) + ", timestamp=" + this.getTimestamp() + ")";
+        return "ApiResponse(code=" + this.getCode() + ", message=" + this.getMessage() + ", data="
+                + String.valueOf(this.getData()) + ", timestamp=" + this.getTimestamp() + ")";
     }
 }
-
