@@ -6,6 +6,8 @@ package com.agentverse.runtime.engine;
 import com.agentverse.runtime.engine.AgentLoaderService;
 import com.agentverse.runtime.engine.InterruptBus;
 import io.agentscope.core.agent.Event;
+import io.agentscope.core.agent.EventType;
+import io.agentscope.core.agent.EventType;
 import io.agentscope.core.agent.RuntimeContext;
 import io.agentscope.core.message.Msg;
 import io.agentscope.harness.agent.HarnessAgent;
@@ -109,6 +111,17 @@ public class HarnessAgentEngine {
 
     String extractContent(Event event) {
         if (event == null || event.getMessage() == null) {
+            return null;
+        }
+        // 只下发最终回答（AGENT_RESULT 且 isLast），过滤 REASONING / TOOL_RESULT
+        // / HINT / SUMMARY 等事件。原因：每个事件的 Msg.getTextContent() 返回
+        // 累积的完整文本（非增量），若全量 emit，前端会把同一回答拼接出 N 遍。
+        // 思考 / 工具 / 总结的可视化在 Step1 OpenSpec 中通过 event: 字段分发实现。
+        EventType type = event.getType();
+        if (type != EventType.AGENT_RESULT) {
+            return null;
+        }
+        if (!event.isLast()) {
             return null;
         }
         return event.getMessage().getTextContent();
