@@ -3,16 +3,18 @@
  */
 package com.agentverse.runtime.model.service;
 
-import com.agentverse.runtime.model.entity.AgentInstance;
-import com.agentverse.runtime.model.mapper.AgentInstanceMapper;
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import java.time.LocalDateTime;
 import java.util.UUID;
-import lombok.Generated;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+
+import com.agentverse.runtime.model.entity.AgentInstance;
+import com.agentverse.runtime.model.mapper.AgentInstanceMapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+
+import lombok.Generated;
 
 @Service
 public class AgentInstanceService {
@@ -29,26 +31,26 @@ public class AgentInstanceService {
         instance.setStartedAt(LocalDateTime.now());
         instance.setLastActiveAt(LocalDateTime.now());
         this.agentInstanceMapper.insert(instance);
-        log.info("Created agent instance: agentId={}, sessionId={}", (Object)agentId, (Object)sessionId);
+        log.info("Created agent instance: agentId={}, sessionId={}", agentId, sessionId);
         return instance;
     }
 
     public void stopInstance(String agentId) {
-        QueryWrapper wrapper = new QueryWrapper();
-        ((QueryWrapper)wrapper.eq((Object)"agent_id", (Object)agentId)).eq((Object)"status", (Object)"active");
-        AgentInstance instance = (AgentInstance)this.agentInstanceMapper.selectOne((Wrapper)wrapper);
+        QueryWrapper<AgentInstance> wrapper = new QueryWrapper<>();
+        wrapper.eq("agent_id", agentId).eq("status", "active");
+        AgentInstance instance = this.agentInstanceMapper.selectOne(wrapper);
         if (instance != null) {
             instance.setStatus("stopped");
             instance.setLastActiveAt(LocalDateTime.now());
             this.agentInstanceMapper.updateById(instance);
-            log.info("Stopped agent instance: agentId={}", (Object)agentId);
+            log.info("Stopped agent instance: agentId={}", agentId);
         }
     }
 
     public long countActive() {
-        QueryWrapper wrapper = new QueryWrapper();
-        wrapper.eq((Object)"status", (Object)"active");
-        return this.agentInstanceMapper.selectCount((Wrapper)wrapper);
+        QueryWrapper<AgentInstance> wrapper = new QueryWrapper<>();
+        wrapper.eq("status", "active");
+        return this.agentInstanceMapper.selectCount(wrapper);
     }
 
     @Generated
@@ -56,4 +58,3 @@ public class AgentInstanceService {
         this.agentInstanceMapper = agentInstanceMapper;
     }
 }
-

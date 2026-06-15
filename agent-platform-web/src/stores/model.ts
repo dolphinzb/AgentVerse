@@ -1,14 +1,14 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import {
   modelApi,
-  type ProviderType,
-  type ProviderPreset,
-  type ModelProvider,
-  type ModelConfig,
-  type ModelStat,
   type ModelAddRequest,
+  type ModelConfig,
+  type ModelProvider,
+  type ModelStat,
+  type ProviderPreset,
+  type ProviderType,
 } from '@/api/model'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export const useModelStore = defineStore('model', () => {
   // ===== 状态 =====
@@ -71,9 +71,15 @@ export const useModelStore = defineStore('model', () => {
     await modelApi.deleteModelConfig(id)
   }
 
-  /** 连接测试 */
-  async function testConnection(providerId: string) {
-    const res = await modelApi.testConnection(providerId)
+  /** 连接测试（已保存的 Provider，可选指定 modelName） */
+  async function testConnection(id: string, modelName?: string) {
+    const res = await modelApi.testConnection(id, modelName)
+    return res.data
+  }
+
+  /** 连接测试（通过模型配置 ID） */
+  async function testModelConfig(configId: string) {
+    const res = await modelApi.testModelConfig(configId)
     return res.data
   }
 
@@ -105,6 +111,7 @@ export const useModelStore = defineStore('model', () => {
     addModel,
     deleteModel,
     testConnection,
+    testModelConfig,
     fetchStats,
   }
 })

@@ -106,10 +106,19 @@
     />
 
     <!-- 编辑模型配置对话框 -->
-    <el-dialog v-model="editDialogVisible" title="编辑模型配置" width="500px">
+    <el-dialog v-model="editDialogVisible" title="编辑模型配置" width="600px">
       <el-form :model="editForm" label-width="100px">
         <el-form-item label="显示名称">
           <el-input v-model="editForm.displayName" placeholder="请输入显示名称" />
+        </el-form-item>
+        <el-form-item label="模型名称">
+          <el-input v-model="editForm.modelName" placeholder="请输入模型名称" />
+        </el-form-item>
+        <el-form-item label="Base URL">
+          <el-input v-model="editForm.baseUrl" placeholder="请输入 API 基础地址" />
+        </el-form-item>
+        <el-form-item label="API Key">
+          <el-input v-model="editForm.apiKey" type="password" show-password placeholder="留空则不修改" />
         </el-form-item>
         <el-form-item label="Temperature">
           <el-slider v-model="editForm.temperature" :min="0" :max="2" :step="0.1" show-input :show-input-controls="false" input-size="small" />
@@ -133,14 +142,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
-import { useModelStore } from '@/stores/model'
+import type { ModelConfig, ProviderPreset } from '@/api/model'
 import { modelApi } from '@/api/model'
-import type { ProviderPreset, ModelConfig } from '@/api/model'
-import AddModelDialog from '@/components/AddModelDialog.vue'
 import AddCustomModelDialog from '@/components/AddCustomModelDialog.vue'
+import AddModelDialog from '@/components/AddModelDialog.vue'
+import { useModelStore } from '@/stores/model'
+import { Plus } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
 
 const modelStore = useModelStore()
 
@@ -156,7 +165,11 @@ const editDialogVisible = ref(false)
 const editSubmitting = ref(false)
 const editForm = ref({
   id: '',
+  providerId: '',
   displayName: '',
+  modelName: '',
+  baseUrl: '',
+  apiKey: '',
   temperature: 0.7,
   maxTokens: 4096,
   topP: 1.0,
@@ -194,10 +207,16 @@ function handleSaved() {
 }
 
 /** 打开编辑对话框 */
-function openEditDialog(config: ModelConfig) {
+async function openEditDialog(config: ModelConfig) {
+  // 获取供应商详情以填充 baseUrl
+  const provider = await modelApi.getProvider(config.providerId)
   editForm.value = {
     id: config.id,
+    providerId: config.providerId,
     displayName: config.displayName || '',
+    modelName: config.modelName || '',
+    baseUrl: provider.data?.baseUrl || '',
+    apiKey: '', // apiKey 不回显，留空表示不修改
     temperature: config.temperature,
     maxTokens: config.maxTokens,
     topP: config.topP,
@@ -210,8 +229,24 @@ function openEditDialog(config: ModelConfig) {
 async function handleEditSubmit() {
   editSubmitting.value = true
   try {
+    // 更新供应商信息（baseUrl、apiKey）
+    const providerUpdate: any = {}
+    if (editForm.value.baseUrl) {
+      providerUpdate.baseUrl = editForm.value.baseUrl
+    }
+    if (editForm.value.apiKey) {
+      providerUpdate.apiKey = editForm.value.apiKey
+    }
+    
+    // 如果有供应商字段需要更新
+    if (Object.keys(providerUpdate).length > 0) {
+      await modelApi.updateProvider(editForm.value.providerId, providerUpdate)
+    }
+
+    // 更新模型配置
     await modelApi.updateModelConfig(editForm.value.id, {
       displayName: editForm.value.displayName || undefined,
+      modelName: editForm.value.modelName || undefined,
       temperature: editForm.value.temperature,
       maxTokens: editForm.value.maxTokens,
       topP: editForm.value.topP,
@@ -227,18 +262,15 @@ async function handleEditSubmit() {
 
 /** 连接测试 */
 async function handleTestConnection(config: ModelConfig) {
-  if (!config.providerId) {
-    ElMessage.warning('无法测试：缺少供应商信息')
-    return
-  }
   try {
-    const result = await modelStore.testConnection(config.providerId)
+    const result = await modelStore.testModelConfig(config.id)
     if (result.success) {
       ElMessage.success(`连接成功！延迟: ${result.latency || '-'}ms`)
     } else {
       ElMessage.error(`连接失败: ${result.message}`)
     }
-  } catch {
+  } catch (error) {
+    console.error('连接测试出错:', error)
     ElMessage.error('连接测试出错')
   }
 }

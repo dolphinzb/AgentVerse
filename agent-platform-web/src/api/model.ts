@@ -134,6 +134,7 @@ export interface ModelConfigCreateRequest {
 /** 模型配置更新请求 */
 export interface ModelConfigUpdateRequest {
   displayName?: string
+  modelName?: string
   maxTokens?: number
   temperature?: number
   topP?: number
@@ -179,8 +180,8 @@ export const modelApi = {
   },
 
   /** 连接测试（已保存的 Provider） */
-  testConnection(id: string) {
-    return request.post<any, { data: ConnectionTestResult }>(`/v1/model-providers/${id}/test`)
+  testConnection(id: string, modelName?: string) {
+    return request.post<any, { data: ConnectionTestResult }>(`/v1/model-providers/${id}/test`, null, { params: { modelName } })
   },
 
   /** 连接测试（无需保存，前端填表单时直接测试） */
@@ -211,6 +212,11 @@ export const modelApi = {
   /** 删除模型配置 */
   deleteModelConfig(id: string) {
     return request.delete(`/v1/model-configs/${id}`)
+  },
+
+  /** 测试模型配置连接（通过 configId） */
+  testModelConfig(id: string) {
+    return request.post<any, { data: ConnectionTestResult }>(`/v1/model-configs/${id}/test`)
   },
 
   /** 一步添加模型 */
